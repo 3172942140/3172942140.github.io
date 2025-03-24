@@ -208,50 +208,6 @@
             display: block;
         }
 
-        .btn {
-            padding: 0.5rem 1.2rem;
-            border-radius: 6px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            font-weight: 500;
-        }
-
-        .btn-primary {
-            background-color: #3498db;
-            color: #fff;
-            border: 2px solid #3498db;
-        }
-
-        .btn-primary:hover {
-            background-color: #2980b9;
-            border-color: #2980b9;
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(52, 152, 219, 0.2);
-        }
-
-        .btn-outline {
-            background: transparent;
-            border: 2px solid #3498db;
-            color: #3498db;
-        }
-
-        .btn-outline:hover {
-            background-color: #3498db;
-            color: #fff;
-            transform: translateY(-1px);
-        }
-
-        .auth-buttons {
-            display: flex;
-            gap: 1rem;
-            align-items: center;
-        }
-
-        .auth-buttons span {
-            color: #2c3e50;
-            font-weight: 500;
-        }
-
         .message-list {
             margin-top: 3rem;
         }
@@ -372,6 +328,17 @@
 
             .message-item {
                 padding: 1rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .main-content {
+                margin-top: 3.5rem;
+                padding: 0.75rem;
+            }
+
+            .message-section {
+                padding: 1.5rem 0.75rem;
             }
         }
 
@@ -502,9 +469,9 @@
         function previewImage(event) {
             const file = event.target.files[0];
             if (file) {
-                // 检查文件大小是否超过1MB
-                if (file.size > 1024 * 1024) {
-                    alert('图片大小不能超过1MB');
+                // 检查文件大小是否超过5MB
+                if (file.size > 5 * 1024 * 1024) {
+                    alert('图片大小不能超过5MB');
                     event.target.value = ''; // 清空选择
                     document.getElementById('fileName').textContent = '';
                     return;
@@ -613,8 +580,8 @@
 
             // 检查图片大小（如果有上传图片）
             if (imageFile && imageFile.size > 0) {
-                if (imageFile.size > 1024 * 1024) {
-                    errorMessage.textContent = '图片大小不能超过1MB';
+                if (imageFile.size > 5 * 1024 * 1024) {
+                    errorMessage.textContent = '图片大小不能超过5MB';
                     errorMessage.style.display = 'block';
                     return;
                 }
