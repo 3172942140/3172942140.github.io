@@ -20,82 +20,257 @@
             display: flex;
             align-items: center;
             justify-content: center;
+            padding: 1rem;
         }
 
         .login-container {
             background-color: #fff;
             padding: 2rem;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
             width: 100%;
             max-width: 400px;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .login-container:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 6px 30px rgba(0,0,0,0.15);
         }
 
         .login-title {
             text-align: center;
             margin-bottom: 2rem;
-            font-size: 1.5rem;
-            color: #333;
+            font-size: 1.75rem;
+            color: #2c3e50;
+            position: relative;
+            display: inline-block;
+            width: 100%;
+        }
+
+        .login-title::after {
+            content: '';
+            position: absolute;
+            bottom: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 60px;
+            height: 4px;
+            background: linear-gradient(90deg, #3498db, #2ecc71);
+            border-radius: 2px;
+            transition: width 0.3s ease;
+        }
+
+        .login-container:hover .login-title::after {
+            width: 100px;
         }
 
         .form-group {
             margin-bottom: 1.5rem;
+            position: relative;
         }
 
         .form-group label {
             display: block;
             margin-bottom: 0.5rem;
-            color: #666;
+            color: #34495e;
+            font-weight: 500;
+            transition: color 0.3s ease;
         }
 
         .form-group input {
             width: 100%;
             padding: 0.75rem;
-            border: 1px solid #ddd;
-            border-radius: 4px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
             font-size: 1rem;
+            transition: all 0.3s ease;
+            background-color: #f8f9fa;
         }
 
         .form-group input:focus {
             outline: none;
-            border-color: #007bff;
+            border-color: #3498db;
+            background-color: #fff;
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+        }
+
+        .form-group:focus-within label {
+            color: #3498db;
         }
 
         .btn {
             width: 100%;
             padding: 0.75rem;
             border: none;
-            border-radius: 4px;
-            background-color: #007bff;
+            border-radius: 8px;
+            background: linear-gradient(135deg, #3498db, #2ecc71);
             color: #fff;
             font-size: 1rem;
+            font-weight: 600;
             cursor: pointer;
-            transition: background-color 0.3s;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
         }
 
         .btn:hover {
-            background-color: #0056b3;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(52, 152, 219, 0.3);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn.loading {
+            pointer-events: none;
+            opacity: 0.8;
+        }
+
+        .btn.loading::after {
+            content: '';
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            top: 50%;
+            left: 50%;
+            margin: -10px 0 0 -10px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-top-color: #fff;
+            border-radius: 50%;
+            animation: button-loading-spinner 0.8s linear infinite;
+        }
+
+        @keyframes button-loading-spinner {
+            from {
+                transform: rotate(0turn);
+            }
+            to {
+                transform: rotate(1turn);
+            }
         }
 
         .error-message {
-            color: #dc3545;
+            color: #e74c3c;
             margin-top: 1rem;
             text-align: center;
             display: none;
+            padding: 0.75rem;
+            border-radius: 8px;
+            background-color: rgba(231, 76, 60, 0.1);
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
         .register-link {
             text-align: center;
-            margin-top: 1rem;
+            margin-top: 1.5rem;
+            color: #7f8c8d;
         }
 
         .register-link a {
-            color: #007bff;
+            color: #3498db;
             text-decoration: none;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            position: relative;
         }
 
-        .register-link a:hover {
-            text-decoration: underline;
+        .register-link a::after {
+            content: '';
+            position: absolute;
+            width: 100%;
+            height: 2px;
+            bottom: -2px;
+            left: 0;
+            background-color: #3498db;
+            transform: scaleX(0);
+            transition: transform 0.3s ease;
+        }
+
+        .register-link a:hover::after {
+            transform: scaleX(1);
+        }
+
+        /* 响应式布局 */
+        @media (max-width: 768px) {
+            .main-wrapper {
+                padding: 1rem;
+            }
+
+            .login-container {
+                padding: 1.5rem;
+            }
+
+            .login-title {
+                font-size: 1.5rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .login-container {
+                padding: 1.25rem;
+                border-radius: 12px;
+            }
+
+            .form-group input {
+                padding: 0.6rem;
+            }
+
+            .btn {
+                padding: 0.6rem;
+            }
+        }
+
+        /* 加载动画 */
+        .form-loading {
+            position: relative;
+        }
+
+        .form-loading::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border-radius: 16px;
+            z-index: 1000;
+        }
+
+        .form-loading::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 40px;
+            height: 40px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3498db;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            z-index: 1001;
+        }
+
+        @keyframes spin {
+            0% { transform: translate(-50%, -50%) rotate(0deg); }
+            100% { transform: translate(-50%, -50%) rotate(360deg); }
         }
     </style>
     <script src="/js/config.js"></script>
@@ -157,9 +332,17 @@
     <script>
         async function handleLogin(event) {
             event.preventDefault();
+            const form = document.getElementById('loginForm');
+            const submitBtn = form.querySelector('button[type="submit"]');
             const errorMessage = document.getElementById('errorMessage');
             const email = document.getElementById('email').value;
             const password = document.getElementById('password').value;
+
+            // 添加加载状态
+            form.classList.add('form-loading');
+            submitBtn.classList.add('loading');
+            submitBtn.disabled = true;
+            errorMessage.style.display = 'none';
 
             try {
                 const response = await fetch(API_CONFIG.getUrl(API_CONFIG.ENDPOINTS.LOGIN), {
@@ -187,6 +370,11 @@
                 console.error('登录请求失败:', error);
                 errorMessage.textContent = '登录失败：网络错误，请稍后重试';
                 errorMessage.style.display = 'block';
+            } finally {
+                // 移除加载状态
+                form.classList.remove('form-loading');
+                submitBtn.classList.remove('loading');
+                submitBtn.disabled = false;
             }
         }
 
