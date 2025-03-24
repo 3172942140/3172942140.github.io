@@ -53,6 +53,56 @@
             border-radius: 12px;
         }
 
+        .login-prompt {
+            text-align: center;
+            padding: 2rem;
+            background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+            border-radius: 12px;
+            margin-bottom: 2rem;
+            display: none;
+        }
+
+        .login-prompt h3 {
+            color: #2c3e50;
+            margin-bottom: 1rem;
+            font-size: 1.5rem;
+        }
+
+        .login-prompt p {
+            color: #7f8c8d;
+            margin-bottom: 1.5rem;
+            line-height: 1.6;
+        }
+
+        .login-prompt .btn-group {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+        }
+
+        .login-prompt .btn {
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .login-prompt .btn-primary {
+            background: linear-gradient(135deg, #3498db, #2ecc71);
+            color: #fff;
+        }
+
+        .login-prompt .btn-outline {
+            background: transparent;
+            border: 2px solid #3498db;
+            color: #3498db;
+        }
+
+        .login-prompt .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(52, 152, 219, 0.3);
+        }
+
         .form-group {
             margin-bottom: 1.5rem;
         }
@@ -363,6 +413,14 @@
             <h1 class="message-title">留言板</h1>
             
             <!-- 留言表单 -->
+            <div class="login-prompt" id="loginPrompt">
+                <h3>登录后即可留言</h3>
+                <p>登录后，您可以发表留言、上传图片，与其他用户互动交流。</p>
+                <div class="btn-group">
+                    <button class="btn btn-primary" onclick="window.location.href='/login.html'">立即登录</button>
+                    <button class="btn btn-outline" onclick="window.location.href='/register.html'">注册账号</button>
+                </div>
+            </div>
             <form id="messageForm" class="message-form" onsubmit="handleSubmit(event)">
                 <div class="form-group">
                     <label for="content">留言内容</label>
@@ -401,6 +459,7 @@
             const token = localStorage.getItem('token');
             const authButtons = document.querySelector('.auth-buttons');
             const messageForm = document.getElementById('messageForm');
+            const loginPrompt = document.getElementById('loginPrompt');
             const contentInput = document.getElementById('content');
             const imageInput = document.getElementById('image');
             
@@ -411,6 +470,7 @@
                     <button class="btn btn-outline" onclick="logout()">退出</button>
                 `;
                 messageForm.style.display = 'block';
+                loginPrompt.style.display = 'none';
                 contentInput.disabled = false;
                 imageInput.disabled = false;
             } else {
@@ -419,6 +479,7 @@
                     <button class="btn-primary" id="registerBtn">注册</button>
                 `;
                 messageForm.style.display = 'none';
+                loginPrompt.style.display = 'block';
                 contentInput.disabled = true;
                 imageInput.disabled = true;
             }
