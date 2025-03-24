@@ -288,25 +288,56 @@
         .btn-download {
             width: 100%;
             padding: 0.5rem;
-            background-color: #007bff;
+            background: linear-gradient(135deg, #3498db, #2ecc71);
             color: #fff;
             border: none;
             border-radius: 4px;
             cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
         }
 
         .btn-download:hover {
-            background-color: #0056b3;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(52, 152, 219, 0.3);
         }
 
-        .btn-download.btn-disabled {
-            background-color: #6c757d;
-            cursor: not-allowed;
+        .btn-download:active {
+            transform: translateY(0);
+        }
+
+        .btn-download.loading {
+            pointer-events: none;
             opacity: 0.8;
         }
 
+        .btn-download.loading::after {
+            content: '';
+            position: absolute;
+            width: 16px;
+            height: 16px;
+            top: 50%;
+            left: 50%;
+            margin: -8px 0 0 -8px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-top-color: #fff;
+            border-radius: 50%;
+            animation: button-loading-spinner 0.8s linear infinite;
+        }
+
+        .btn-download.btn-disabled {
+            background: #95a5a6;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
         .btn-download.btn-disabled:hover {
-            background-color: #6c757d;
+            background: #95a5a6;
+            transform: none;
+            box-shadow: none;
         }
 
         /* ViewerJS 相关样式 */
@@ -603,6 +634,11 @@
                     
                     filesGrid.innerHTML = files.map(file => {
                         const icon = getFileIcon(file.type);
+                        const buttonClass = isLoggedIn ? 'btn-download' : 'btn-download btn-disabled';
+                        const buttonAction = isLoggedIn ? 
+                            `onclick="downloadFile('${file.id}', '${file.filename}', '${file.type}')"` :
+                            'onclick="promptLogin()"';
+                        const buttonText = isLoggedIn ? '下载' : '请登录后下载';
                         
                         return `
                             <div class="file-item">
@@ -611,20 +647,12 @@
                                 <div class="file-meta">
                                     ${formatFileSize(file.size)} · ${formatFileType(file.type)}
                                 </div>
-                                ${isLoggedIn ? 
-                                    `<button 
-                                        class="btn-download" 
-                                        onclick="downloadFile('${file.id}', '${file.filename}', '${file.type}')"
-                                    >
-                                        下载
-                                    </button>` : 
-                                    `<button 
-                                        class="btn-download btn-disabled" 
-                                        onclick="promptLogin()"
-                                    >
-                                        请登录后下载
-                                    </button>`
-                                }
+                                <button 
+                                    class="${buttonClass}"
+                                    ${buttonAction}
+                                >
+                                    ${buttonText}
+                                </button>
                             </div>
                         `;
                     }).join('');
@@ -636,8 +664,21 @@
 
         // 处理文件下载
         async function downloadFile(fileId, filename, type) {
+            const token = localStorage.getItem('token');
+            if (!token) {
+                promptLogin();
+                return;
+            }
+
+            const button = event.target;
+            if (button.classList.contains('loading')) {
+                return;
+            }
+
             try {
-                const token = localStorage.getItem('token');
+                button.classList.add('loading');
+                button.textContent = '下载中...';
+
                 const response = await fetch(API_CONFIG.getUrl(API_CONFIG.ENDPOINTS.FILE(fileId)), {
                     headers: {
                         'Authorization': `Bearer ${token}`
@@ -645,6 +686,13 @@
                 });
 
                 if (!response.ok) {
+                    if (response.status === 401) {
+                        // Token 失效，清除登录状态并提示重新登录
+                        localStorage.removeItem('token');
+                        localStorage.removeItem('user');
+                        promptLogin();
+                        return;
+                    }
                     throw new Error('下载文件失败');
                 }
 
@@ -665,9 +713,15 @@
                 // 清理
                 window.URL.revokeObjectURL(url);
                 document.body.removeChild(a);
+
+                // 恢复按钮状态
+                button.classList.remove('loading');
+                button.textContent = '下载';
             } catch (error) {
                 console.error('下载文件失败:', error);
                 alert('下载文件失败，请重试');
+                button.classList.remove('loading');
+                button.textContent = '下载';
             }
         }
 
@@ -799,9 +853,11 @@
             }
         }
 
-        // 添加提示登录的函数
+        // 提示登录
         function promptLogin() {
             if (confirm('请先登录后再下载文件。是否前往登录页面？')) {
+                // 保存当前页面URL，登录后可以返回
+                localStorage.setItem('redirectUrl', window.location.href);
                 window.location.href = '/login.html';
             }
         }
