@@ -542,7 +542,11 @@
                 const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
 
                 messageList.innerHTML = messages.map(message => {
-                    const createdDate = new Date(message.created_at * 1000);
+                    // 创建时间对象并调整时区
+                    const timestamp = message.created_at * 1000;
+                    const date = new Date(timestamp);
+                    // 减去8小时的毫秒数 (8 * 60 * 60 * 1000)
+                    const localDate = new Date(date.getTime() - (8 * 3600 * 1000));
                     const isAdmin = currentUser.role === 'admin';
                     const isAuthor = currentUser.id === message.user_id;
                     const canDelete = isAdmin || isAuthor;
@@ -551,7 +555,7 @@
                         <div class="message-item">
                             <div class="message-header">
                                 <span class="message-author">${message.author_name}</span>
-                                <span class="message-time">${createdDate.toLocaleString()}</span>
+                                <span class="message-time">${localDate.toLocaleString()}</span>
                             </div>
                             <div class="message-content">${message.content}</div>
                             ${message.image_path ? `
