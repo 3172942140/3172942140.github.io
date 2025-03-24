@@ -275,6 +275,7 @@
     </style>
     <script src="/js/config.js"></script>
     <script src="/js/common.js"></script>
+    <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
 </head>
 <body>
     <nav class="navbar">
@@ -313,6 +314,17 @@
                     <label for="password">密码</label>
                     <input type="password" id="password" name="password" required minlength="6">
                 </div>
+                <div class="form-group turnstile-container">
+                    <div class="cf-turnstile" 
+                        data-sitekey="0x4AAAAAABCSh4bldl_KukA0" 
+                        data-theme="light"
+                        data-language="zh-CN"
+                        data-retry="auto"
+                        data-refresh-expired="true"
+                        data-callback="onTurnstileSuccess"
+                        data-error-callback="onTurnstileError">
+                    </div>
+                </div>
                 <button type="submit" class="btn">注册</button>
                 <div id="errorMessage" class="error-message"></div>
             </form>
@@ -343,6 +355,14 @@
             const name = document.getElementById('name').value;
             const password = document.getElementById('password').value;
 
+            // 获取 Turnstile token
+            const turnstileResponse = document.querySelector('[name="cf-turnstile-response"]')?.value;
+            if (!turnstileResponse) {
+                errorMessage.textContent = '请完成人机验证';
+                errorMessage.style.display = 'block';
+                return;
+            }
+
             // 添加加载状态
             form.classList.add('form-loading');
             submitBtn.classList.add('loading');
@@ -350,12 +370,34 @@
             errorMessage.style.display = 'none';
 
             try {
+                // 首先验证 Turnstile token
+                const verifyResponse = await fetch(API_CONFIG.getUrl('/api/verify-turnstile'), {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ token: turnstileResponse })
+                });
+
+                const verifyData = await verifyResponse.json();
+                if (!verifyData.success) {
+                    errorMessage.textContent = '人机验证失败：' + (verifyData.error || '请重试');
+                    errorMessage.style.display = 'block';
+                    turnstile.reset();
+                    return;
+                }
+
+                // 验证通过后继续注册流程
                 const response = await fetch(API_CONFIG.getUrl(API_CONFIG.ENDPOINTS.REGISTER), {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({ email, name, password })
+                    body: JSON.stringify({ 
+                        email, 
+                        name, 
+                        password
+                    })
                 });
 
                 const data = await response.json();
@@ -366,11 +408,15 @@
                 } else {
                     errorMessage.textContent = '注册失败：' + (data.message || '请检查输入信息');
                     errorMessage.style.display = 'block';
+                    // 重置 Turnstile
+                    turnstile.reset();
                 }
             } catch (error) {
                 console.error('注册请求失败:', error);
                 errorMessage.textContent = '注册失败：网络错误，请稍后重试';
                 errorMessage.style.display = 'block';
+                // 重置 Turnstile
+                turnstile.reset();
             } finally {
                 // 移除加载状态
                 form.classList.remove('form-loading');
@@ -414,6 +460,18 @@
                 window.location.href = '/register.html';
             });
         });
+
+        // 添加 Turnstile 回调函数
+        function onTurnstileSuccess(token) {
+            console.log('Turnstile 验证成功');
+            document.getElementById('errorMessage').style.display = 'none';
+        }
+
+        function onTurnstileError() {
+            console.error('Turnstile 验证失败');
+            document.getElementById('errorMessage').textContent = '人机验证失败，请重试';
+            document.getElementById('errorMessage').style.display = 'block';
+        }
     </script>
 </body>
 </html>
