@@ -7,6 +7,9 @@
     <link rel="icon" type="image/svg+xml" href="images/favicon.svg">
     <link rel="icon" type="image/png" href="images/favicon.png">
     <link rel="stylesheet" href="/css/common.css">
+    <!-- 预加载 Turnstile -->
+    <link rel="preconnect" href="https://challenges.cloudflare.com">
+    <link rel="dns-prefetch" href="https://challenges.cloudflare.com">
     <style>
         body {
             min-height: 100vh;
@@ -272,6 +275,16 @@
             0% { transform: translate(-50%, -50%) rotate(0deg); }
             100% { transform: translate(-50%, -50%) rotate(360deg); }
         }
+
+        .turnstile-container {
+            display: flex;
+            justify-content: center;
+            min-height: 65px;
+        }
+        
+        .turnstile-container iframe {
+            margin: 0 auto;
+        }
     </style>
     <script src="/js/config.js"></script>
     <script src="/js/common.js"></script>
@@ -462,6 +475,19 @@
             // 绑定注册按钮事件
             document.getElementById('registerBtn')?.addEventListener('click', () => {
                 window.location.href = '/register.html';
+            });
+
+            // 在页面加载完成后立即初始化 Turnstile
+            turnstile.ready(function() {
+                turnstile.render('.cf-turnstile', {
+                    sitekey: '0x4AAAAAABCSh4bldl_KukA0',
+                    theme: 'light',
+                    language: 'zh-CN',
+                    retry: 'auto',
+                    'refresh-expired': 'true',
+                    callback: onTurnstileSuccess,
+                    'error-callback': onTurnstileError
+                });
             });
         });
 
