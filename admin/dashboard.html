@@ -501,23 +501,99 @@
             background-color: #c0392b;
         }
 
+        /* 图片查看器样式 */
         .image-viewer {
+            display: none;
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background-color: rgba(0,0,0,0.8);
-            display: none;
+            background-color: rgba(0, 0, 0, 0.9);
+            z-index: 1000;
             justify-content: center;
             align-items: center;
-            z-index: 1000;
         }
 
         .image-viewer img {
-            max-width: 80%;
-            max-height: 80%;
-            border-radius: 8px;
+            max-width: 90%;
+            max-height: 90vh;
+            object-fit: contain;
+        }
+
+        .image-viewer.active {
+            display: flex;
+        }
+
+        /* 添加关闭按钮样式 */
+        .image-viewer-close {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 40px;
+            height: 40px;
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            z-index: 1001;
+        }
+
+        .image-viewer-close:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: rotate(90deg);
+        }
+
+        .image-viewer-close::before,
+        .image-viewer-close::after {
+            content: '';
+            position: absolute;
+            width: 20px;
+            height: 2px;
+            background-color: #fff;
+        }
+
+        .image-viewer-close::before {
+            transform: rotate(45deg);
+        }
+
+        .image-viewer-close::after {
+            transform: rotate(-45deg);
+        }
+
+        /* 查看图片按钮样式 */
+        .view-image-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            background: linear-gradient(135deg, #3498db, #2ecc71);
+            color: #fff;
+            border: none;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 0.5rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .view-image-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(52, 152, 219, 0.3);
+        }
+
+        .view-image-btn:active {
+            transform: translateY(0);
+        }
+
+        .view-image-btn::before {
+            content: '🔍';
+            font-size: 1.1rem;
         }
     </style>
     <script src="/js/config.js"></script>
@@ -745,6 +821,7 @@
     </div>
 
     <div id="imageViewer" class="image-viewer">
+        <button class="image-viewer-close" onclick="hideImageViewer()" aria-label="关闭"></button>
         <img src="" alt="查看图片">
     </div>
 
@@ -1615,16 +1692,6 @@
                 console.error('删除留言失败:', error);
                 alert(error.message || '删除留言失败，请重试');
             }
-        }
-
-        // 确保图片查看器存在
-        if (!document.getElementById('imageViewer')) {
-            const viewer = document.createElement('div');
-            viewer.id = 'imageViewer';
-            viewer.className = 'image-viewer';
-            viewer.innerHTML = '<img src="" alt="查看图片">';
-            viewer.onclick = hideImageViewer;
-            document.body.appendChild(viewer);
         }
 
         // 显示图片查看器
