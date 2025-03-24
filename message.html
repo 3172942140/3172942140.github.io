@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>留言板 - 个人博客</title>
+    <link rel="icon" type="image/svg+xml" href="images/favicon.svg">
+    <link rel="icon" type="image/png" href="images/favicon.png">
+    <link rel="stylesheet" href="/css/common.css">
+    <script src="/js/config.js"></script>
+    <script src="/js/common.js"></script>
+    <style>
+        .main-content {
+            max-width: 70%;
+            min-width: 800px;
+            margin: 6rem auto 2rem;
+            padding: 2rem;
+        }
+
+        .message-section {
+            background-color: #fff;
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+            padding: 3rem 2rem;
+            text-align: center;
+            transition: transform 0.3s ease;
+        }
+
+        .development-notice {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1.5rem;
+        }
+
+        .development-icon {
+            font-size: 4rem;
+            color: #3498db;
+            animation: bounce 2s infinite;
+        }
+
+        .development-title {
+            font-size: 2rem;
+            color: #2c3e50;
+            margin: 0;
+        }
+
+        .development-text {
+            font-size: 1.1rem;
+            color: #666;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        @media (max-width: 1200px) {
+            .main-content {
+                max-width: 90%;
+                min-width: auto;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                max-width: 100%;
+                margin: 4rem auto 1.5rem;
+                padding: 1rem;
+            }
+
+            .message-section {
+                padding: 2rem 1rem;
+            }
+
+            .development-icon {
+                font-size: 3rem;
+            }
+
+            .development-title {
+                font-size: 1.5rem;
+            }
+
+            .development-text {
+                font-size: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <a href="/" class="nav-brand">个人博客</a>
+            <button class="menu-toggle" aria-label="切换菜单">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+            <div class="nav-links">
+                <a href="/">首页</a>
+                <a href="/message.html">留言</a>
+                <a href="/about.html">关于</a>
+            </div>
+            <div class="auth-buttons">
+                <button class="btn-outline" id="loginBtn">登录</button>
+                <button class="btn-primary" id="registerBtn">注册</button>
+            </div>
+        </div>
+    </nav>
+
+    <main class="main-content">
+        <section class="message-section">
+            <div class="development-notice">
+                <div class="development-icon">🚧</div>
+                <h1 class="development-title">功能开发中</h1>
+                <p class="development-text">
+                    留言板功能正在紧张开发中，敬请期待！
+                </p>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        // 检查用户登录状态
+        function checkAuthStatus() {
+            const token = localStorage.getItem('token');
+            const authButtons = document.querySelector('.auth-buttons');
+            
+            if (token) {
+                const user = JSON.parse(localStorage.getItem('user'));
+                authButtons.innerHTML = `
+                    <span>欢迎，${user.name}</span>
+                    <button class="btn btn-outline" onclick="logout()">退出</button>
+                `;
+            }
+        }
+
+        // 退出登录
+        function logout() {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            window.location.reload();
+        }
+
+        // 页面加载完成后执行
+        document.addEventListener('DOMContentLoaded', () => {
+            checkAuthStatus();
+
+            // 绑定登录按钮事件
+            document.getElementById('loginBtn')?.addEventListener('click', () => {
+                window.location.href = '/login.html';
+            });
+
+            // 绑定注册按钮事件
+            document.getElementById('registerBtn')?.addEventListener('click', () => {
+                window.location.href = '/register.html';
+            });
+        });
+    </script>
+
+    <footer class="footer">
+        <div class="footer-content">
+            <div class="footer-links">
+                <a href="/">首页</a> | 
+                <a href="/message.html">留言</a> |
+                <a href="/about.html">关于</a> | 
+                <span>© 2024 个人博客</span>
+            </div>
+        </div>
+    </footer>
+</body>
+</html> 

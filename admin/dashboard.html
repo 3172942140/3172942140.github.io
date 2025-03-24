@@ -1,0 +1,1464 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>管理控制台 - 个人博客</title>
+    <link rel="icon" type="image/svg+xml" href="../images/favicon.svg">
+    <link rel="icon" type="image/png" href="../images/favicon.png">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/simplemde/latest/simplemde.min.css">
+    <script src="https://cdn.jsdelivr.net/simplemde/latest/simplemde.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Microsoft YaHei', sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background-color: #f5f5f5;
+        }
+
+        .dashboard {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        .sidebar {
+            width: 250px;
+            background-color: #2c3e50;
+            color: #fff;
+            padding: 1rem;
+        }
+
+        .sidebar-header {
+            padding: 1rem;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            margin-bottom: 1rem;
+        }
+
+        .sidebar-title {
+            font-size: 1.25rem;
+            font-weight: bold;
+        }
+
+        .nav-menu {
+            list-style: none;
+        }
+
+        .nav-item {
+            margin-bottom: 0.5rem;
+        }
+
+        .nav-link {
+            display: block;
+            padding: 0.75rem 1rem;
+            color: #fff;
+            text-decoration: none;
+            border-radius: 4px;
+            transition: background-color 0.3s;
+        }
+
+        .nav-link:hover,
+        .nav-link.active {
+            background-color: rgba(255,255,255,0.1);
+        }
+
+        .main-content {
+            flex: 1;
+            padding: 2rem;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+
+        .header-title {
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .btn {
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .btn-danger {
+            background-color: #dc3545;
+            color: #fff;
+        }
+
+        .btn-danger:hover {
+            background-color: #c82333;
+        }
+
+        .content-section {
+            background-color: #fff;
+            border-radius: 8px;
+            padding: 1.5rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .btn-primary {
+            background-color: #007bff;
+            color: #fff;
+        }
+
+        .btn-primary:hover {
+            background-color: #0056b3;
+        }
+
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .table th,
+        .table td {
+            padding: 0.75rem;
+            text-align: left;
+            border-bottom: 1px solid #dee2e6;
+        }
+
+        .table th {
+            background-color: #f8f9fa;
+            font-weight: bold;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .btn-sm {
+            padding: 0.25rem 0.5rem;
+            font-size: 0.875rem;
+        }
+
+        .btn-warning {
+            background-color: #ffc107;
+            color: #000;
+        }
+
+        .btn-warning:hover {
+            background-color: #e0a800;
+        }
+
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            z-index: 1000;
+            display: none;
+            overflow-y: auto;
+            padding: 20px;
+        }
+
+        .modal-content {
+            position: relative;
+            background-color: #fff;
+            margin: 2rem auto;
+            width: 90%;
+            max-width: 900px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .modal-header {
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid #dee2e6;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: #f8f9fa;
+            border-top-left-radius: 8px;
+            border-top-right-radius: 8px;
+        }
+
+        .modal-body {
+            padding: 1.5rem;
+            max-height: calc(100vh - 200px);
+            overflow-y: auto;
+        }
+
+        .close {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #666;
+            cursor: pointer;
+            padding: 0.5rem;
+            line-height: 1;
+        }
+
+        .close:hover {
+            color: #333;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .form-control:focus {
+            border-color: #80bdff;
+            outline: 0;
+            box-shadow: 0 0 0 0.2rem rgba(0,123,255,.25);
+        }
+
+        .editor-container {
+            margin-bottom: 1.5rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+
+        .form-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 1rem;
+            padding: 1rem;
+            background-color: #f8f9fa;
+            border-top: 1px solid #dee2e6;
+        }
+
+        @media (max-width: 768px) {
+            .dashboard {
+                flex-direction: column;
+            }
+
+            .sidebar {
+                width: 80%; /* 减小侧边栏宽度，不占满整个屏幕 */
+                max-width: 300px; /* 设置最大宽度 */
+                position: fixed;
+                top: 0;
+                left: -100%;
+                height: 100vh;
+                z-index: 1001;
+                transition: all 0.3s ease;
+                box-shadow: none;
+            }
+
+            .sidebar.active {
+                left: 0;
+                box-shadow: 2px 0 8px rgba(0,0,0,0.2);
+            }
+
+            /* 优化侧边栏内部样式 */
+            .sidebar-header {
+                padding: 1.5rem 1rem;
+                margin-bottom: 0.5rem;
+            }
+
+            .nav-menu {
+                padding: 0.5rem 0;
+            }
+
+            .nav-item {
+                margin-bottom: 0.25rem;
+            }
+
+            .nav-link {
+                padding: 0.8rem 1rem;
+                font-size: 0.95rem;
+            }
+
+            .main-content {
+                width: 100%;
+                padding: 1rem;
+                margin-top: 60px;
+                transition: transform 0.3s ease;
+            }
+
+            /* 当侧边栏打开时，主内容区域右移 */
+            .sidebar.active + .main-content {
+                transform: translateX(80%);
+            }
+
+            .header {
+                flex-direction: column;
+                gap: 1rem;
+                align-items: flex-start;
+            }
+
+            .table {
+                display: block;
+                overflow-x: auto;
+                white-space: nowrap;
+            }
+
+            .modal-content {
+                width: 95%;
+                margin: 1rem auto;
+            }
+
+            .modal-body {
+                padding: 1rem;
+            }
+
+            .form-actions {
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+
+            .form-actions button {
+                width: 100%;
+            }
+
+            .action-buttons {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 0.25rem;
+            }
+
+            .btn-sm {
+                padding: 0.5rem;
+                font-size: 0.8rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .header-title {
+                font-size: 1.25rem;
+            }
+
+            .section-header {
+                flex-direction: column;
+                gap: 1rem;
+                align-items: stretch;
+            }
+
+            .section-header button {
+                width: 100%;
+            }
+
+            .table th,
+            .table td {
+                padding: 0.5rem;
+                font-size: 0.9rem;
+            }
+
+            .editor-container {
+                margin: 0 -1rem;
+            }
+
+            .CodeMirror {
+                height: 300px;
+            }
+
+            .sidebar {
+                width: 85%; /* 在更小的屏幕上稍微调整宽度 */
+            }
+
+            .sidebar.active + .main-content {
+                transform: translateX(85%);
+            }
+        }
+
+        /* 编辑器样式 */
+        .editor-toolbar {
+            border-top-left-radius: 4px;
+            border-top-right-radius: 4px;
+        }
+
+        .CodeMirror {
+            height: 400px;
+            border-bottom-left-radius: 4px;
+            border-bottom-right-radius: 4px;
+        }
+
+        #sidebarToggle.menu-toggle {
+            display: none;
+            flex-direction: column;
+            justify-content: space-between;
+            width: 20px; /* 减小宽度 */
+            height: 15px; /* 减小高度 */
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            padding: 0;
+            z-index: 1002;
+            position: fixed;
+            top: 1.2rem;
+            left: 1rem;
+        }
+
+        #sidebarToggle.menu-toggle span {
+            width: 100%;
+            height: 2px;
+            background-color: #2c3e50;
+            border-radius: 2px;
+            transition: all 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
+            position: absolute;
+            left: 0;
+        }
+
+        #sidebarToggle.menu-toggle span:nth-child(1) {
+            top: 0;
+        }
+
+        #sidebarToggle.menu-toggle span:nth-child(2) {
+            top: 6px; /* 调整中间线的位置 */
+            width: 70%;
+        }
+
+        #sidebarToggle.menu-toggle span:nth-child(3) {
+            bottom: 0;
+        }
+
+        #sidebarToggle.menu-toggle:hover span:nth-child(2) {
+            width: 100%;
+        }
+
+        #sidebarToggle.menu-toggle.active span:nth-child(1) {
+            transform: translateY(6px) rotate(45deg); /* 调整旋转位置 */
+        }
+
+        #sidebarToggle.menu-toggle.active span:nth-child(2) {
+            opacity: 0;
+            transform: translateX(-100%);
+        }
+
+        #sidebarToggle.menu-toggle.active span:nth-child(3) {
+            transform: translateY(-6px) rotate(-45deg); /* 调整旋转位置 */
+        }
+    </style>
+    <script src="/js/config.js"></script>
+</head>
+<body>
+    <div class="dashboard">
+        <button id="sidebarToggle" class="menu-toggle" aria-label="切换菜单" style="position: fixed; top: 1rem; left: 1rem; z-index: 1002; display: none;">
+            <span></span>
+            <span></span>
+            <span></span>
+        </button>
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="sidebar-title">管理控制台</div>
+            </div>
+            <ul class="nav-menu">
+                <li class="nav-item">
+                    <a href="#" class="nav-link active" data-section="posts">文章管理</a>
+                </li>
+                <li class="nav-item">
+                    <a href="#" class="nav-link" data-section="users">用户管理</a>
+                </li>
+                <li class="nav-item">
+                    <a href="#" class="nav-link" data-section="comments">评论管理</a>
+                </li>
+                <li class="nav-item">
+                    <a href="#" class="nav-link" data-section="files">文件管理</a>
+                </li>
+            </ul>
+        </aside>
+
+        <main class="main-content">
+            <header class="header">
+                <h1 class="header-title">文章管理</h1>
+                <div class="user-info">
+                    <span id="userName"></span>
+                    <button class="btn btn-danger" onclick="logout()">退出</button>
+                </div>
+            </header>
+
+            <section id="postsSection" class="content-section">
+                <div class="section-header">
+                    <h2>文章列表</h2>
+                    <button class="btn btn-primary" onclick="createPost()">新建文章</button>
+                </div>
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>标题</th>
+                            <th>作者</th>
+                            <th>发布时间</th>
+                            <th>更新时间</th>
+                            <th>状态</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="postsTableBody"></tbody>
+                </table>
+            </section>
+
+            <section id="usersSection" class="content-section" style="display: none;">
+                <div class="section-header">
+                    <h2>用户列表</h2>
+                </div>
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>用户名</th>
+                            <th>邮箱</th>
+                            <th>角色</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="usersTableBody"></tbody>
+                </table>
+            </section>
+
+            <section id="commentsSection" class="content-section" style="display: none;">
+                <div class="section-header">
+                    <h2>评论管理</h2>
+                </div>
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>评论内容</th>
+                            <th>文章标题</th>
+                            <th>评论者</th>
+                            <th>评论时间</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="commentsTableBody"></tbody>
+                </table>
+            </section>
+
+            <section id="filesSection" class="content-section" style="display: none;">
+                <div class="section-header">
+                    <h2>文件管理</h2>
+                    <button class="btn btn-primary" onclick="showUploadModal()">上传文件</button>
+                </div>
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>文件名</th>
+                            <th>类型</th>
+                            <th>大小</th>
+                            <th>上传者</th>
+                            <th>上传时间</th>
+                            <th>关联文章</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="filesTableBody"></tbody>
+                </table>
+            </section>
+        </main>
+    </div>
+
+    <div id="createPostModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>新建文章</h2>
+                <span class="close" onclick="closeCreatePostModal()">&times;</span>
+            </div>
+            <form id="createPostForm">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="postTitle">标题</label>
+                        <input type="text" id="postTitle" name="title" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="postContent">内容</label>
+                        <div class="editor-container">
+                            <textarea id="postContent" name="content"></textarea>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="postStatus">状态</label>
+                        <select id="postStatus" name="status" class="form-control" required>
+                            <option value="draft">草稿</option>
+                            <option value="published">发布</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeCreatePostModal()">取消</button>
+                    <button type="submit" class="btn btn-primary">保存</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="editPostModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>编辑文章</h2>
+                <span class="close" onclick="closeEditPostModal()">&times;</span>
+            </div>
+            <form id="editPostForm" onsubmit="return handleEditPost(event)">
+                <input type="hidden" id="editPostId" name="id">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="editPostTitle">标题</label>
+                        <input type="text" id="editPostTitle" name="title" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="editPostContent">内容</label>
+                        <div class="editor-container">
+                            <textarea id="editPostContent" name="content"></textarea>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="editPostStatus">状态</label>
+                        <select id="editPostStatus" name="status" class="form-control" required>
+                            <option value="draft">草稿</option>
+                            <option value="published">发布</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeEditPostModal()">取消</button>
+                    <button type="submit" class="btn btn-primary">保存</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="uploadFileModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>上传文件</h2>
+                <span class="close" onclick="closeUploadModal()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <form id="uploadFileForm" onsubmit="handleFileUpload(event)">
+                    <div class="form-group">
+                        <label for="file">选择文件</label>
+                        <input type="file" id="file" name="file" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="postId">关联文章（可选）</label>
+                        <select id="postId" name="postId">
+                            <option value="">不关联文章</option>
+                        </select>
+                    </div>
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-secondary" onclick="closeUploadModal()">取消</button>
+                        <button type="submit" class="btn btn-primary">上传</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 检查登录状态
+        function checkAuth() {
+            const token = localStorage.getItem('token');
+            const user = JSON.parse(localStorage.getItem('user') || '{}');
+            
+            if (!token || user.role !== 'admin') {
+                window.location.href = '/admin/login.html';
+                return;
+            }
+
+            document.getElementById('userName').textContent = `管理员：${user.name}`;
+        }
+
+        // 加载文章列表
+        async function loadPosts() {
+            try {
+                const response = await fetch(API_CONFIG.getUrl(API_CONFIG.ENDPOINTS.ADMIN_POSTS), {
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    }
+                });
+                const posts = await response.json();
+                const tableBody = document.getElementById('postsTableBody');
+                
+                tableBody.innerHTML = posts.map(post => {
+                    // 创建新的 Date 对象，使用正确的时间戳（秒转毫秒）
+                    const createdDate = new Date(post.created_at * 1000);
+                    const updatedDate = new Date(post.updated_at * 1000);
+                    
+                    return `
+                        <tr>
+                            <td>${post.title}</td>
+                            <td>${post.author_name}</td>
+                            <td>${createdDate.toLocaleString()}</td>
+                            <td>${updatedDate.toLocaleString()}</td>
+                            <td>${post.status === 'published' ? '已发布' : '草稿'}</td>
+                            <td class="action-buttons">
+                                <button class="btn btn-sm btn-warning" onclick="editPost('${post.id}')">编辑</button>
+                                <button class="btn btn-sm btn-danger" onclick="deletePost('${post.id}')">删除</button>
+                                <button class="btn btn-sm btn-info" onclick="viewComments('${post.id}')">评论</button>
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
+            } catch (error) {
+                console.error('加载文章列表失败:', error);
+                alert('加载文章列表失败，请重试');
+            }
+        }
+
+        // 加载用户列表
+        async function loadUsers() {
+            try {
+                const response = await fetch(API_CONFIG.getUrl(API_CONFIG.ENDPOINTS.USERS), {
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    }
+                });
+                const users = await response.json();
+                const tableBody = document.getElementById('usersTableBody');
+                
+                tableBody.innerHTML = users.map(user => `
+                    <tr>
+                        <td>${user.name}</td>
+                        <td>${user.email}</td>
+                        <td>
+                            <select onchange="updateUserRole('${user.id}', this.value)" ${user.email === JSON.parse(localStorage.getItem('user')).email ? 'disabled' : ''}>
+                                <option value="user" ${user.role === 'user' ? 'selected' : ''}>普通用户</option>
+                                <option value="admin" ${user.role === 'admin' ? 'selected' : ''}>管理员</option>
+                            </select>
+                        </td>
+                        <td class="action-buttons">
+                            <button class="btn btn-sm btn-danger" onclick="deleteUser('${user.id}')" ${user.email === JSON.parse(localStorage.getItem('user')).email ? 'disabled' : ''}>删除</button>
+                        </td>
+                    </tr>
+                `).join('');
+            } catch (error) {
+                console.error('加载用户列表失败:', error);
+                alert('加载用户列表失败，请重试');
+            }
+        }
+
+        // 更新用户角色
+        async function updateUserRole(userId, newRole) {
+            try {
+                const response = await fetch(API_CONFIG.getUrl(API_CONFIG.ENDPOINTS.UPDATE_USER_ROLE(userId)), {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    },
+                    body: JSON.stringify({ role: newRole })
+                });
+
+                if (!response.ok) {
+                    throw new Error('更新用户角色失败');
+                }
+
+                alert('用户角色更新成功');
+                loadUsers();
+            } catch (error) {
+                console.error('更新用户角色失败:', error);
+                alert('更新用户角色失败，请重试');
+            }
+        }
+
+        // 切换内容区域
+        function switchSection(sectionId) {
+            document.querySelectorAll('.content-section').forEach(section => {
+                section.style.display = 'none';
+            });
+            document.querySelectorAll('.nav-link').forEach(link => {
+                link.classList.remove('active');
+            });
+
+            document.getElementById(`${sectionId}Section`).style.display = 'block';
+            document.querySelector(`[data-section="${sectionId}"]`).classList.add('active');
+            
+            const titles = {
+                posts: '文章管理',
+                users: '用户管理',
+                comments: '评论管理',
+                files: '文件管理'
+            };
+            document.querySelector('.header-title').textContent = titles[sectionId];
+
+            // 在切换页面时自动关闭侧边栏
+            if (window.innerWidth <= 768) {
+                const sidebar = document.querySelector('.sidebar');
+                const overlay = document.querySelector('.sidebar-overlay');
+                if (sidebar.classList.contains('active')) {
+                    sidebar.classList.remove('active');
+                    if (overlay) {
+                        overlay.remove();
+                    }
+                }
+            }
+
+            if (sectionId === 'posts') {
+                loadPosts();
+            } else if (sectionId === 'users') {
+                loadUsers();
+            } else if (sectionId === 'comments') {
+                loadComments();
+            } else if (sectionId === 'files') {
+                loadFiles();
+            }
+        }
+
+        // 退出登录
+        function logout() {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            window.location.href = '/admin/login.html';
+        }
+
+        // 页面加载完成后执行的初始化函数
+        document.addEventListener('DOMContentLoaded', () => {
+            // 检查登录状态
+            checkAuth();
+            
+            // 加载初始数据
+            loadPosts();
+            
+            // 初始化表单提交事件
+            const createPostForm = document.getElementById('createPostForm');
+            if (createPostForm) {
+                createPostForm.addEventListener('submit', handleCreatePost);
+            }
+            
+            // 初始化导航菜单事件
+            document.querySelectorAll('.nav-link').forEach(link => {
+                link.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const section = e.target.getAttribute('data-section');
+                    switchSection(section);
+                    // 在移动端点击菜单项后关闭侧边栏
+                    if (window.innerWidth <= 768) {
+                        toggleSidebar();
+                    }
+                });
+            });
+
+            // 初始化移动端侧边栏
+            initMobileSidebar();
+        });
+
+        let editor = null;
+        let editEditor = null;
+
+        // 创建文章
+        function createPost() {
+            document.getElementById('createPostModal').style.display = 'block';
+            document.getElementById('createPostForm').reset();
+            if (editor) {
+                editor.toTextArea();
+            }
+            editor = new SimpleMDE({
+                element: document.getElementById('postContent'),
+                spellChecker: false
+            });
+        }
+
+        // 处理创建文章
+        async function handleCreatePost(event) {
+            event.preventDefault();
+            
+            const title = document.getElementById('postTitle').value;
+            const content = editor ? editor.value() : '';
+            const status = document.getElementById('postStatus').value;
+
+            // 手动验证表单
+            if (!title.trim()) {
+                alert('请输入文章标题');
+                return;
+            }
+
+            if (!content.trim()) {
+                alert('请输入文章内容');
+                return;
+            }
+
+            // 获取当前时间戳（秒）
+            const now = Math.floor(Date.now() / 1000);
+
+            try {
+                const requestUrl = API_CONFIG.getUrl(API_CONFIG.ENDPOINTS.POSTS);
+                const token = localStorage.getItem('token');
+                if (!token) {
+                    throw new Error('未找到认证令牌');
+                }
+
+                const response = await fetch(requestUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ 
+                        title: title.trim(), 
+                        content: content.trim(), 
+                        status,
+                        created_at: now,
+                        updated_at: now
+                    })
+                });
+
+                // 打印响应状态
+                console.log('响应状态:', response.status);
+
+                // 获取响应内容
+                const responseData = await response.json();
+                console.log('响应数据:', responseData);
+
+                if (!response.ok) {
+                    throw new Error(responseData.message || '创建文章失败');
+                }
+
+                alert('文章创建成功');
+                closeCreatePostModal();
+                loadPosts();
+            } catch (error) {
+                console.error('创建文章失败:', error);
+                if (error.name === 'TypeError') {
+                    alert('网络错误或API地址无效，请检查网络连接');
+                } else {
+                    alert(`创建文章失败: ${error.message}`);
+                }
+            }
+        }
+
+        // 编辑文章
+        async function editPost(postId) {
+            try {
+                const response = await fetch(API_CONFIG.getUrl(API_CONFIG.ENDPOINTS.POST(postId)), {
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error('获取文章详情失败');
+                }
+
+                const post = await response.json();
+                
+                document.getElementById('editPostId').value = post.id;
+                document.getElementById('editPostTitle').value = post.title;
+                document.getElementById('editPostStatus').value = post.status;
+
+                if (editEditor) {
+                    editEditor.toTextArea();
+                }
+                editEditor = new SimpleMDE({
+                    element: document.getElementById('editPostContent'),
+                    spellChecker: false
+                });
+                editEditor.value(post.content);
+                
+                document.getElementById('editPostModal').style.display = 'block';
+            } catch (error) {
+                console.error('加载文章详情失败:', error);
+                alert('加载文章详情失败，请重试');
+            }
+        }
+
+        // 处理编辑文章
+        async function handleEditPost(event) {
+            event.preventDefault();
+            
+            const id = document.getElementById('editPostId').value;
+            const title = document.getElementById('editPostTitle').value;
+            const content = editEditor ? editEditor.value() : '';
+            const status = document.getElementById('editPostStatus').value;
+
+            // 手动验证表单
+            if (!title.trim()) {
+                alert('请输入文章标题');
+                return;
+            }
+
+            if (!content.trim()) {
+                alert('请输入文章内容');
+                return;
+            }
+
+            // 获取当前时间戳（秒）
+            const now = Math.floor(Date.now() / 1000);
+
+            try {
+                const response = await fetch(API_CONFIG.getUrl(API_CONFIG.ENDPOINTS.POST(id)), {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    },
+                    body: JSON.stringify({ 
+                        title: title.trim(), 
+                        content: content.trim(), 
+                        status,
+                        updated_at: now
+                    })
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.message || '更新文章失败');
+                }
+
+                alert('文章更新成功');
+                closeEditPostModal();
+                loadPosts();
+            } catch (error) {
+                console.error('更新文章失败:', error);
+                alert(error.message || '更新文章失败，请重试');
+            }
+        }
+
+        function closeCreatePostModal() {
+            document.getElementById('createPostModal').style.display = 'none';
+            if (editor) {
+                editor.toTextArea();
+                editor = null;
+            }
+        }
+
+        function closeEditPostModal() {
+            document.getElementById('editPostModal').style.display = 'none';
+            if (editEditor) {
+                editEditor.toTextArea();
+                editEditor = null;
+            }
+        }
+
+        async function deletePost(postId) {
+            if (!confirm('确定要删除这篇文章吗？')) {
+                return;
+            }
+
+            try {
+                const response = await fetch(API_CONFIG.getUrl(API_CONFIG.ENDPOINTS.POST(postId)), {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    }
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.message || '删除文章失败');
+                }
+
+                loadPosts();
+            } catch (error) {
+                console.error('删除文章失败:', error);
+                alert(error.message || '删除文章失败，请重试');
+            }
+        }
+
+        async function deleteUser(userId) {
+            if (!confirm('确定要删除这个用户吗？')) {
+                return;
+            }
+
+            try {
+                const response = await fetch(API_CONFIG.getUrl(API_CONFIG.ENDPOINTS.USERS(userId)), {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    }
+                });
+
+                if (response.ok) {
+                    loadUsers();
+                } else {
+                    throw new Error('删除用户失败');
+                }
+            } catch (error) {
+                console.error('删除用户失败:', error);
+                alert('删除用户失败，请重试');
+            }
+        }
+
+        // 加载评论列表
+        async function loadComments(postId = null) {
+            try {
+                const url = postId 
+                    ? API_CONFIG.getUrl(API_CONFIG.ENDPOINTS.POST_COMMENTS(postId))
+                    : API_CONFIG.getUrl(API_CONFIG.ENDPOINTS.ADMIN_COMMENTS);
+                
+                const response = await fetch(url, {
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    }
+                });
+                const comments = await response.json();
+                const tableBody = document.getElementById('commentsTableBody');
+                
+                tableBody.innerHTML = comments.map(comment => {
+                    // 创建一个新的 Date 对象，使用正确的时间戳
+                    const createdDate = new Date(comment.created_at * 1000);
+                    
+                    return `
+                        <tr>
+                            <td>${comment.content}</td>
+                            <td>${comment.post_title || '已删除的文章'}</td>
+                            <td>${comment.author_name || '未知用户'}</td>
+                            <td>${createdDate.toLocaleString()}</td>
+                            <td class="action-buttons">
+                                <button class="btn btn-sm btn-danger" onclick="deleteComment('${comment.id}')">删除</button>
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
+            } catch (error) {
+                console.error('加载评论失败:', error);
+                alert('加载评论列表失败，请重试');
+            }
+        }
+
+        // 删除评论
+        async function deleteComment(commentId) {
+            if (!confirm('确定要删除这条评论吗？')) {
+                return;
+            }
+
+            try {
+                const response = await fetch(API_CONFIG.getUrl(API_CONFIG.ENDPOINTS.COMMENT(commentId)), {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error('删除评论失败');
+                }
+
+                loadComments();
+            } catch (error) {
+                console.error('删除评论失败:', error);
+                alert('删除评论失败，请重试');
+            }
+        }
+
+        // 查看特定文章的评论
+        function viewComments(postId) {
+            switchSection('comments');
+            loadComments(postId);
+        }
+
+        // 加载文件列表
+        async function loadFiles() {
+            try {
+                const response = await fetch(API_CONFIG.getUrl(API_CONFIG.ENDPOINTS.ADMIN_FILES), {
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    }
+                });
+                const files = await response.json();
+                const tableBody = document.getElementById('filesTableBody');
+                
+                tableBody.innerHTML = files.map(file => `
+                    <tr>
+                        <td>${file.filename}</td>
+                        <td>${formatFileType(file.type)}</td>
+                        <td>${formatFileSize(file.size)}</td>
+                        <td>${file.uploader_name || '未知'}</td>
+                        <td>${new Date(file.created_at).toLocaleString()}</td>
+                        <td>
+                            <select 
+                                class="file-post-select" 
+                                onchange="updateFilePost('${file.id}', this.value)"
+                                data-current="${file.post_id || ''}"
+                            >
+                                <option value="">不关联文章</option>
+                                <!-- 文章选项将通过 loadPostsForFileSelect 动态加载 -->
+                            </select>
+                        </td>
+                        <td class="action-buttons">
+                            <a href="${API_CONFIG.getUrl(API_CONFIG.ENDPOINTS.FILE(file.id))}" class="btn btn-sm btn-info" target="_blank">查看</a>
+                            <button class="btn btn-sm btn-danger" onclick="deleteFile('${file.id}')">删除</button>
+                        </td>
+                    </tr>
+                `).join('');
+
+                // 加载每个文件的文章选项
+                loadPostsForFileSelect();
+            } catch (error) {
+                console.error('加载文件列表失败:', error);
+                alert('加载文件列表失败，请重试');
+            }
+        }
+
+        function formatFileType(type) {
+            const typeMap = {
+                'image': '图片',
+                'video': '视频',
+                'document': '文档',
+                'audio': '音频',
+                'application': '应用',
+                'text': '文本'
+            };
+            
+            if (!type) return '未知';
+            
+            const mainType = type.split('/')[0];
+            return typeMap[mainType] || type;
+        }
+
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 B';
+            const k = 1024;
+            const sizes = ['B', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        function showUploadModal() {
+            document.getElementById('uploadFileModal').style.display = 'block';
+            loadPostsForSelect();
+        }
+
+        function closeUploadModal() {
+            document.getElementById('uploadFileModal').style.display = 'none';
+            document.getElementById('uploadFileForm').reset();
+        }
+
+        async function loadPostsForSelect() {
+            try {
+                const response = await fetch(API_CONFIG.getUrl(API_CONFIG.ENDPOINTS.ADMIN_POSTS), {
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    }
+                });
+                const posts = await response.json();
+                const select = document.getElementById('postId');
+                
+                select.innerHTML = '<option value="">不关联文章</option>' + 
+                    posts.map(post => `<option value="${post.id}">${post.title}</option>`).join('');
+            } catch (error) {
+                console.error('加载文章列表失败:', error);
+            }
+        }
+
+        async function handleFileUpload(event) {
+            event.preventDefault();
+            
+            const formData = new FormData(event.target);
+            const file = formData.get('file');
+            
+            // 检查文件大小
+            if (file.size > 10 * 1024 * 1024) { // 10MB限制
+                alert('文件大小不能超过10MB');
+                return;
+            }
+
+            // 检查文件类型
+            const allowedTypes = ['image/', 'video/', 'application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.'];
+            if (!allowedTypes.some(type => file.type.startsWith(type))) {
+                alert('不支持的文件类型');
+                return;
+            }
+            
+            try {
+                const response = await fetch(API_CONFIG.getUrl(API_CONFIG.ENDPOINTS.UPLOAD), {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    },
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    throw new Error('上传文件失败');
+                }
+
+                const result = await response.json();
+                if (result.success) {
+                    closeUploadModal();
+                    loadFiles();
+                    alert('文件上传成功');
+                } else {
+                    throw new Error(result.message || '上传文件失败');
+                }
+            } catch (error) {
+                console.error('上传文件失败:', error);
+                alert(error.message || '上传文件失败，请重试');
+            }
+        }
+
+        async function deleteFile(fileId) {
+            if (!confirm('确定要删除这个文件吗？')) {
+                return;
+            }
+
+            try {
+                const response = await fetch(API_CONFIG.getUrl(API_CONFIG.ENDPOINTS.FILE(fileId)), {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error('删除文件失败');
+                }
+
+                loadFiles();
+                alert('文件删除成功');
+            } catch (error) {
+                console.error('删除文件失败:', error);
+                alert('删除文件失败，请重试');
+            }
+        }
+
+        // 加载文章选项到所有文件的下拉框
+        async function loadPostsForFileSelect() {
+            try {
+                const response = await fetch(API_CONFIG.getUrl(API_CONFIG.ENDPOINTS.ADMIN_POSTS), {
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    }
+                });
+                const posts = await response.json();
+                
+                // 更新所有文件的文章选择下拉框
+                document.querySelectorAll('.file-post-select').forEach(select => {
+                    const currentPostId = select.getAttribute('data-current');
+                    const options = posts.map(post => 
+                        `<option value="${post.id}" ${post.id === currentPostId ? 'selected' : ''}>
+                            ${post.title}
+                        </option>`
+                    ).join('');
+                    select.innerHTML = '<option value="">不关联文章</option>' + options;
+                });
+            } catch (error) {
+                console.error('加载文章列表失败:', error);
+            }
+        }
+
+        // 更新文件关联的文章
+        async function updateFilePost(fileId, postId) {
+            try {
+                const response = await fetch(API_CONFIG.getUrl(API_CONFIG.ENDPOINTS.UPDATE_FILE_POST(fileId)), {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    },
+                    body: JSON.stringify({ postId: postId || null })
+                });
+
+                if (!response.ok) {
+                    throw new Error('更新文件关联失败');
+                }
+
+                const result = await response.json();
+                if (result.success) {
+                    // 更新成功后重新加载文件列表
+                    loadFiles();
+                } else {
+                    throw new Error(result.message || '更新文件关联失败');
+                }
+            } catch (error) {
+                console.error('更新文件关联失败:', error);
+                alert(error.message || '更新文件关联失败，请重试');
+                // 更新失败时重新加载文件列表以恢复原始状态
+                loadFiles();
+            }
+        }
+
+        // 添加评论时获取当前时间戳（如果需要）
+        function getCurrentTimestamp() {
+            return Math.floor(Date.now() / 1000); // 返回当前的 Unix 时间戳（秒）
+        }
+
+        // 初始化移动端侧边栏
+        function initMobileSidebar() {
+            const sidebarToggle = document.getElementById('sidebarToggle');
+            const sidebar = document.querySelector('.sidebar');
+            const dashboard = document.querySelector('.dashboard');
+            let overlay = null;
+
+            // 根据屏幕宽度显示/隐藏切换按钮
+            function updateToggleVisibility() {
+                if (window.innerWidth <= 768) {
+                    sidebarToggle.style.display = 'flex';
+                    if (sidebar.classList.contains('active')) {
+                        closeSidebar();
+                    }
+                } else {
+                    sidebarToggle.style.display = 'none';
+                    sidebar.classList.remove('active');
+                    if (overlay) {
+                        overlay.remove();
+                        overlay = null;
+                    }
+                }
+            }
+
+            // 关闭侧边栏
+            function closeSidebar() {
+                sidebar.classList.remove('active');
+                sidebarToggle.classList.remove('active');
+                if (overlay) {
+                    overlay.remove();
+                    overlay = null;
+                }
+            }
+
+            // 打开侧边栏
+            function openSidebar() {
+                sidebar.classList.add('active');
+                sidebarToggle.classList.add('active');
+                // 添加遮罩层
+                overlay = document.createElement('div');
+                overlay.className = 'sidebar-overlay';
+                overlay.style.cssText = `
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 100%;
+                    background: rgba(0,0,0,0.5);
+                    z-index: 1000;
+                    backdrop-filter: blur(2px);
+                    transition: opacity 0.3s ease;
+                `;
+                dashboard.appendChild(overlay);
+                
+                // 点击遮罩层关闭侧边栏
+                overlay.addEventListener('click', closeSidebar);
+            }
+
+            // 切换侧边栏
+            function toggleSidebar() {
+                if (sidebar.classList.contains('active')) {
+                    closeSidebar();
+                } else {
+                    openSidebar();
+                }
+            }
+
+            // 监听窗口大小变化
+            window.addEventListener('resize', updateToggleVisibility);
+            
+            // 初始化时检查一次
+            updateToggleVisibility();
+            
+            // 绑定切换按钮点击事件
+            sidebarToggle.addEventListener('click', toggleSidebar);
+
+            // 将 toggleSidebar 函数暴露给全局作用域
+            window.toggleSidebar = toggleSidebar;
+        }
+    </script>
+</body>
+</html>

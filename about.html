@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>关于我 - 个人博客</title>
+    <link rel="icon" type="image/svg+xml" href="images/favicon.svg">
+    <link rel="icon" type="image/png" href="images/favicon.png">
+    <link rel="stylesheet" href="/css/common.css">
+    <script src="/js/config.js"></script>
+    <script src="/js/common.js"></script>
+    <style>
+        .main-content {
+            max-width: 70%;
+            min-width: 800px;
+            margin: 6rem auto 2rem;
+            padding: 2rem;
+        }
+
+        .about-section {
+            background-color: #fff;
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+            padding: 2rem;
+            margin-bottom: 2rem;
+            transition: transform 0.3s ease;
+        }
+
+        .about-section:hover {
+            transform: translateY(-5px);
+        }
+
+        .about-title {
+            font-size: 2.5rem;
+            color: #2c3e50;
+            margin-bottom: 2rem;
+            position: relative;
+            display: inline-block;
+        }
+
+        .about-title::after {
+            content: '';
+            position: absolute;
+            bottom: -10px;
+            left: 0;
+            width: 60px;
+            height: 4px;
+            background: linear-gradient(90deg, #3498db, #2ecc71);
+            border-radius: 2px;
+            transition: width 0.3s ease;
+        }
+
+        .about-title:hover::after {
+            width: 100%;
+        }
+
+        .info-list {
+            list-style: none;
+            padding: 0;
+            display: grid;
+            gap: 1rem;
+        }
+
+        .info-item {
+            display: flex;
+            align-items: center;
+            padding: 1.2rem;
+            background-color: #f8f9fa;
+            border-radius: 12px;
+            transition: all 0.3s ease;
+            border: 1px solid rgba(0,0,0,0.05);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .info-item::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 4px;
+            height: 100%;
+            background: linear-gradient(180deg, #3498db, #2ecc71);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .info-item:hover {
+            transform: translateX(10px);
+            background-color: #fff;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            border-color: rgba(52, 152, 219, 0.2);
+        }
+
+        .info-item:hover::before {
+            opacity: 1;
+        }
+
+        .info-icon {
+            font-size: 1.8rem;
+            margin-right: 1.5rem;
+            min-width: 2.5rem;
+            text-align: center;
+            transition: transform 0.3s ease;
+        }
+
+        .info-item:hover .info-icon {
+            transform: scale(1.2);
+        }
+
+        .info-label {
+            font-weight: 600;
+            margin-right: 1rem;
+            color: #34495e;
+            min-width: 4rem;
+        }
+
+        .info-value {
+            color: #2c3e50;
+            font-size: 1.1rem;
+        }
+
+        .contact-link {
+            color: #3498db;
+            text-decoration: none;
+            position: relative;
+            transition: color 0.3s ease;
+            padding-bottom: 2px;
+        }
+
+        .contact-link::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background: linear-gradient(90deg, #3498db, #2ecc71);
+            transition: width 0.3s ease;
+        }
+
+        .contact-link:hover {
+            color: #2980b9;
+            text-decoration: none;
+        }
+
+        .contact-link:hover::after {
+            width: 100%;
+        }
+
+        .skills-section {
+            margin-top: 2rem;
+            padding-top: 2rem;
+            border-top: 1px solid #eee;
+        }
+
+        .skills-title {
+            font-size: 1.5rem;
+            color: #2c3e50;
+            margin-bottom: 1.5rem;
+        }
+
+        .skills-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .skill-item {
+            background: #f8f9fa;
+            padding: 1rem;
+            border-radius: 8px;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .skill-item:hover {
+            background: #fff;
+            transform: translateY(-5px);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+        }
+
+        .skill-icon {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+        }
+
+        @media (max-width: 1200px) {
+            .main-content {
+                max-width: 90%;
+                min-width: auto;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                max-width: 100%;
+                margin: 4rem auto 1.5rem;
+                padding: 1rem;
+            }
+
+            .about-section {
+                padding: 1.5rem;
+                border-radius: 12px;
+            }
+
+            .about-title {
+                font-size: 2rem;
+            }
+
+            .info-item {
+                padding: 1rem;
+            }
+
+            .info-icon {
+                font-size: 1.5rem;
+                margin-right: 1rem;
+            }
+
+            .info-value {
+                font-size: 1rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .main-content {
+                padding: 0.75rem;
+            }
+
+            .about-section {
+                padding: 1.25rem;
+                border-radius: 10px;
+            }
+
+            .about-title {
+                font-size: 1.75rem;
+            }
+
+            .info-label {
+                min-width: 3.5rem;
+            }
+
+            .skills-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <a href="/" class="nav-brand">个人博客</a>
+            <button class="menu-toggle" aria-label="切换菜单">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+            <div class="nav-links">
+                <a href="/">首页</a>
+                <a href="/message.html">留言</a>
+                <a href="/about.html">关于</a>
+            </div>
+            <div class="auth-buttons">
+                <button class="btn-outline" id="loginBtn">登录</button>
+                <button class="btn-primary" id="registerBtn">注册</button>
+            </div>
+        </div>
+    </nav>
+
+    <main class="main-content">
+        <section class="about-section">
+            <h1 class="about-title">关于我</h1>
+            <ul class="info-list">
+                <li class="info-item">
+                    <span class="info-icon">👤</span>
+                    <span class="info-label">姓名：</span>
+                    <span class="info-value">szzzh</span>
+                </li>
+                <li class="info-item">
+                    <span class="info-icon">⚧</span>
+                    <span class="info-label">性别：</span>
+                    <span class="info-value">男</span>
+                </li>
+                <li class="info-item">
+                    <span class="info-icon">🎮</span>
+                    <span class="info-label">CS2：</span>
+                    <span class="info-value">游戏时长 1700h</span>
+                </li>
+                <li class="info-item">
+                    <span class="info-icon">💬</span>
+                    <span class="info-label">QQ：</span>
+                    <span class="info-value">
+                        <a href="tencent://message/?uin=3172942140" class="contact-link">3172942140</a>
+                    </span>
+                </li>
+                <li class="info-item">
+                    <span class="info-icon">📧</span>
+                    <span class="info-label">邮箱：</span>
+                    <span class="info-value">
+                        <a href="mailto:3172942140@qq.com" class="contact-link">3172942140@qq.com</a>
+                    </span>
+                </li>
+            </ul>
+
+            <div class="skills-section">
+                <h2 class="skills-title">技能特长</h2>
+                <div class="skills-grid">
+                    <div class="skill-item">
+                        <div class="skill-icon">💻</div>
+                        <div>Web开发</div>
+                    </div>
+                    <div class="skill-item">
+                        <div class="skill-icon">🎮</div>
+                        <div>玩游戏</div>
+                    </div>
+                    <div class="skill-item">
+                        <div class="skill-icon">🎨</div>
+                        <div>玩游戏</div>
+                    </div>
+                    <div class="skill-item">
+                        <div class="skill-icon">📱</div>
+                        <div>玩游戏</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        // 检查用户登录状态
+        function checkAuthStatus() {
+            const token = localStorage.getItem('token');
+            const authButtons = document.querySelector('.auth-buttons');
+            
+            if (token) {
+                const user = JSON.parse(localStorage.getItem('user'));
+                authButtons.innerHTML = `
+                    <span>欢迎，${user.name}</span>
+                    <button class="btn btn-outline" onclick="logout()">退出</button>
+                `;
+            }
+        }
+
+        // 退出登录
+        function logout() {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            window.location.reload();
+        }
+
+        // 页面加载完成后执行
+        document.addEventListener('DOMContentLoaded', () => {
+            checkAuthStatus();
+
+            // 绑定登录按钮事件
+            document.getElementById('loginBtn')?.addEventListener('click', () => {
+                window.location.href = '/login.html';
+            });
+
+            // 绑定注册按钮事件
+            document.getElementById('registerBtn')?.addEventListener('click', () => {
+                window.location.href = '/register.html';
+            });
+        });
+    </script>
+
+    <footer class="footer">
+        <div class="footer-content">
+            <div class="footer-links">
+                <a href="/">首页</a> | 
+                <a href="/message.html">留言</a> |
+                <a href="/about.html">关于</a> | 
+                <span>© 2024 个人博客</span>
+            </div>
+        </div>
+    </footer>
+</body>
+</html> 

@@ -1,0 +1,831 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>文章详情 - 个人博客</title>
+    <link rel="icon" type="image/svg+xml" href="images/favicon.svg">
+    <link rel="icon" type="image/png" href="images/favicon.png">
+    <link rel="stylesheet" href="/css/common.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/viewerjs/1.11.6/viewer.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/viewerjs/1.11.6/viewer.min.js"></script>
+    <script src="/js/config.js"></script>
+    <script src="/js/common.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/github-markdown-css/5.2.0/github-markdown.min.css">
+    <style>
+        .main-content {
+            max-width: 800px;
+            margin: 6rem auto 2rem;
+            padding: 2rem;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        /* 加载动画样式 */
+        .loading-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 300px;
+            gap: 2rem;
+        }
+
+        .loading-spinner {
+            width: 50px;
+            height: 50px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #3498db;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        .loading-pulse {
+            width: 100%;
+            max-width: 600px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .loading-pulse::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, 
+                transparent,
+                rgba(255, 255, 255, 0.6),
+                transparent
+            );
+            animation: pulse 1.5s infinite;
+        }
+
+        .loading-title {
+            height: 40px;
+            margin-bottom: 1rem;
+        }
+
+        .loading-meta {
+            height: 24px;
+            width: 200px;
+            margin-bottom: 2rem;
+        }
+
+        .loading-paragraph {
+            height: 16px;
+            margin-bottom: 1rem;
+        }
+
+        .loading-paragraph:nth-child(odd) {
+            width: 95%;
+        }
+
+        .loading-paragraph:nth-child(even) {
+            width: 90%;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @keyframes pulse {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+
+        /* 内容淡入动画 */
+        .post-content {
+            animation: fadeIn 0.5s ease;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .post-header {
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid #eee;
+        }
+
+        .post-title {
+            font-size: 2rem;
+            color: #333;
+            margin-bottom: 1rem;
+        }
+
+        .post-meta {
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        .post-content {
+            line-height: 1.8;
+            color: #444;
+            margin-bottom: 2rem;
+        }
+
+        .comments-section {
+            margin-top: 3rem;
+            padding-top: 2rem;
+            border-top: 1px solid #eee;
+        }
+
+        .comments-title {
+            font-size: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .comment-form {
+            margin-bottom: 2rem;
+        }
+
+        .comment-input {
+            width: 100%;
+            padding: 1rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            margin-bottom: 1rem;
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        .btn {
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .btn-outline {
+            background-color: transparent;
+            border: 2px solid #3498db;
+            color: #3498db;
+            padding: 0.5rem 1.2rem;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+
+        .btn-outline:hover {
+            background-color: #3498db;
+            color: #fff;
+            transform: translateY(-1px);
+        }
+
+        .btn-primary {
+            background-color: #3498db;
+            color: #fff;
+            padding: 0.5rem 1.2rem;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 2px solid #3498db;
+            font-weight: 500;
+        }
+
+        .btn-primary:hover {
+            background-color: #2980b9;
+            border-color: #2980b9;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(52, 152, 219, 0.2);
+        }
+
+        .comment-list {
+            list-style: none;
+        }
+
+        .comment-item {
+            padding: 1rem;
+            border-bottom: 1px solid #eee;
+        }
+
+        .comment-meta {
+            color: #666;
+            font-size: 0.9rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .comment-content {
+            color: #444;
+        }
+
+        .delete-comment {
+            color: #dc3545;
+            background: none;
+            border: none;
+            cursor: pointer;
+            float: right;
+        }
+
+        .delete-comment:hover {
+            text-decoration: underline;
+        }
+
+        /* 文件展示区域样式 */
+        .files-section {
+            margin: 2rem 0;
+            padding: 1rem;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+
+        .files-title {
+            font-size: 1.2rem;
+            margin-bottom: 1rem;
+            color: #333;
+        }
+
+        .files-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 1rem;
+        }
+
+        .file-item {
+            background: #fff;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 1rem;
+        }
+
+        .file-icon {
+            font-size: 2rem;
+            color: #6c757d;
+            text-align: center;
+            margin-bottom: 0.5rem;
+        }
+
+        .file-name {
+            font-size: 0.9rem;
+            color: #333;
+            margin: 0.5rem 0;
+            word-break: break-all;
+        }
+
+        .file-meta {
+            font-size: 0.8rem;
+            color: #666;
+            margin-bottom: 0.5rem;
+        }
+
+        .btn-download {
+            width: 100%;
+            padding: 0.5rem;
+            background-color: #007bff;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .btn-download:hover {
+            background-color: #0056b3;
+        }
+
+        .btn-download.btn-disabled {
+            background-color: #6c757d;
+            cursor: not-allowed;
+            opacity: 0.8;
+        }
+
+        .btn-download.btn-disabled:hover {
+            background-color: #6c757d;
+        }
+
+        /* ViewerJS 相关样式 */
+        .viewer-zoom-in::before,
+        .viewer-zoom-out::before,
+        .viewer-one-to-one::before,
+        .viewer-reset::before,
+        .viewer-prev::before,
+        .viewer-play::before,
+        .viewer-next::before,
+        .viewer-rotate-left::before,
+        .viewer-rotate-right::before,
+        .viewer-flip-horizontal::before,
+        .viewer-flip-vertical::before,
+        .viewer-fullscreen::before,
+        .viewer-fullscreen-exit::before,
+        .viewer-close::before {
+            background-image: none;
+            font-family: "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+        }
+
+        .viewer-zoom-in::before { content: "🔍"; }
+        .viewer-zoom-out::before { content: "🔍"; }
+        .viewer-one-to-one::before { content: "1:1"; }
+        .viewer-reset::before { content: "↺"; }
+        .viewer-rotate-left::before { content: "↺"; }
+        .viewer-rotate-right::before { content: "↻"; }
+        .viewer-flip-horizontal::before { content: "↔"; }
+        .viewer-flip-vertical::before { content: "↕"; }
+
+        /* Markdown 样式 */
+        .markdown-body {
+            box-sizing: border-box;
+            min-width: 200px;
+            max-width: 100%;
+            padding: 45px;
+            overflow-wrap: break-word;
+            word-wrap: break-word;
+            word-break: break-word;
+        }
+
+        @media (max-width: 767px) {
+            .markdown-body {
+                padding: 15px 0;
+            }
+
+            .main-content {
+                margin-top: 5rem;
+                padding: 1rem;
+            }
+
+            .post-title {
+                font-size: 1.5rem;
+            }
+
+            .files-grid {
+                grid-template-columns: 1fr;
+            }
+
+            /* 确保文章内容在移动端正确显示 */
+            .post-content {
+                width: 100%;
+                overflow-x: hidden;
+            }
+
+            /* 调整代码块在移动端的显示 */
+            .markdown-body pre {
+                margin-left: -1rem;
+                margin-right: -1rem;
+                padding: 1rem;
+                border-radius: 0;
+            }
+
+            .markdown-body pre code {
+                padding: 0;
+                white-space: pre-wrap;
+            }
+
+            /* 调整表格在移动端的显示 */
+            .markdown-body table {
+                display: block;
+                width: 100%;
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .main-content {
+                padding: 0.75rem;
+            }
+
+            .markdown-body {
+                padding: 10px 0;
+            }
+
+            .post-content {
+                margin: 0 -0.75rem;
+                padding: 0 0.75rem;
+            }
+        }
+
+        .btn-disabled {
+            background-color: #6c757d;
+            cursor: not-allowed;
+            opacity: 0.8;
+            border-color: #6c757d;
+        }
+
+        .btn-disabled:hover {
+            background-color: #6c757d;
+            border-color: #6c757d;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .comment-input:disabled {
+            background-color: #f8f9fa;
+            cursor: not-allowed;
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                margin-top: 5rem;
+                padding: 1rem;
+            }
+
+            .post-title {
+                font-size: 1.5rem;
+            }
+
+            .files-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <a href="/" class="nav-brand">个人博客</a>
+            <button class="menu-toggle" aria-label="切换菜单">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+            <div class="nav-links">
+                <a href="/">首页</a>
+                <a href="/message.html">留言</a>
+                <a href="/about.html">关于</a>
+            </div>
+            <div class="auth-buttons">
+                <button class="btn-outline" id="loginBtn">登录</button>
+                <button class="btn-primary" id="registerBtn">注册</button>
+            </div>
+        </div>
+    </nav>
+
+    <main class="main-content">
+        <article class="post">
+            <div class="loading-container" id="loadingContainer">
+                <div class="loading-spinner"></div>
+                <div class="loading-pulse loading-title"></div>
+                <div class="loading-pulse loading-meta"></div>
+                <div class="loading-pulse loading-paragraph"></div>
+                <div class="loading-pulse loading-paragraph"></div>
+                <div class="loading-pulse loading-paragraph"></div>
+                <div class="loading-pulse loading-paragraph"></div>
+            </div>
+            <header class="post-header" style="display: none;" id="postHeader">
+                <h1 class="post-title" id="postTitle"></h1>
+                <div class="post-meta" id="postMeta"></div>
+            </header>
+            <div class="post-content markdown-body" id="postContent" style="display: none;"></div>
+            
+            <!-- 添加文件展示区域 -->
+            <section class="files-section" id="filesSection" style="display: none;">
+                <h3 class="files-title">相关文件</h3>
+                <div class="files-grid" id="filesGrid"></div>
+            </section>
+        </article>
+
+        <section class="comments-section">
+            <h2 class="comments-title">评论</h2>
+            <div id="commentFormContainer">
+                <form class="comment-form" id="commentForm" onsubmit="handleCommentSubmit(event)">
+                    <textarea class="comment-input" name="content" placeholder="写下你的评论..." required></textarea>
+                    <button type="submit" class="btn btn-primary" id="commentSubmitBtn">发表评论</button>
+                </form>
+            </div>
+            <ul class="comment-list" id="commentList"></ul>
+        </section>
+    </main>
+
+    <script>
+        // 从URL获取文章ID
+        const urlParams = new URLSearchParams(window.location.search);
+        const postId = urlParams.get('id');
+
+        // 检查用户登录状态
+        function checkAuthStatus() {
+            const token = localStorage.getItem('token');
+            const authButtons = document.querySelector('.auth-buttons');
+            const commentForm = document.getElementById('commentForm');
+            const commentInput = document.querySelector('.comment-input');
+            const commentSubmitBtn = document.getElementById('commentSubmitBtn');
+            
+            if (token) {
+                const user = JSON.parse(localStorage.getItem('user'));
+                authButtons.innerHTML = `
+                    <span>欢迎，${user.name}</span>
+                    <button class="btn btn-outline" onclick="logout()">退出</button>
+                `;
+            } else {
+                authButtons.innerHTML = `
+                    <button class="btn btn-outline" id="loginBtn" onclick="window.location.href='/login.html'">登录</button>
+                    <button class="btn btn-primary" id="registerBtn" onclick="window.location.href='/register.html'">注册</button>
+                `;
+            }
+
+            // 评论区域的状态更新
+            if (token) {
+                commentInput.disabled = false;
+                commentInput.placeholder = "写下你的评论...";
+                commentSubmitBtn.classList.remove('btn-disabled');
+                commentSubmitBtn.disabled = false;
+            } else {
+                commentInput.disabled = true;
+                commentInput.placeholder = "请登录后发表评论";
+                commentSubmitBtn.classList.add('btn-disabled');
+                commentSubmitBtn.disabled = true;
+                commentSubmitBtn.onclick = promptLogin;
+            }
+        }
+
+        // 退出登录
+        function logout() {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            window.location.reload();
+        }
+
+        // 加载文章详情
+        async function loadPost() {
+            try {
+                const response = await fetch(API_CONFIG.getUrl(API_CONFIG.ENDPOINTS.POST(postId)));
+                const post = await response.json();
+
+                document.title = `${post.title} - 个人博客`;
+                
+                // 更新内容
+                document.getElementById('postTitle').textContent = post.title;
+                const createdDate = new Date(post.created_at * 1000);
+                document.getElementById('postMeta').textContent = `作者：${post.author_name} · ${createdDate.toLocaleString()}`;
+                
+                // 使用 marked 渲染 Markdown
+                const contentHtml = marked.parse(post.content);
+                document.getElementById('postContent').innerHTML = contentHtml;
+
+                // 隐藏加载动画，显示内容
+                document.getElementById('loadingContainer').style.display = 'none';
+                document.getElementById('postHeader').style.display = 'block';
+                document.getElementById('postContent').style.display = 'block';
+
+                // 重新检查登录状态并更新顶栏
+                checkAuthStatus();
+
+                loadComments();
+                loadPostFiles();
+            } catch (error) {
+                console.error('加载文章失败:', error);
+                document.getElementById('loadingContainer').innerHTML = `
+                    <div style="text-align: center; color: #666;">
+                        <p>加载失败，请稍后重试</p>
+                        <button class="btn-outline" onclick="loadPost()">重新加载</button>
+                    </div>
+                `;
+            }
+        }
+
+        // 加载文章关联的文件
+        async function loadPostFiles() {
+            try {
+                const response = await fetch(API_CONFIG.getUrl(`/api/posts/${postId}/files`));
+                const files = await response.json();
+                
+                if (files && files.length > 0) {
+                    const filesGrid = document.getElementById('filesGrid');
+                    document.getElementById('filesSection').style.display = 'block';
+                    
+                    // 检查用户是否登录
+                    const token = localStorage.getItem('token');
+                    const isLoggedIn = !!token;
+                    
+                    filesGrid.innerHTML = files.map(file => {
+                        const icon = getFileIcon(file.type);
+                        
+                        return `
+                            <div class="file-item">
+                                <div class="file-icon">${icon}</div>
+                                <div class="file-name">${file.filename}</div>
+                                <div class="file-meta">
+                                    ${formatFileSize(file.size)} · ${formatFileType(file.type)}
+                                </div>
+                                ${isLoggedIn ? 
+                                    `<button 
+                                        class="btn-download" 
+                                        onclick="downloadFile('${file.id}', '${file.filename}', '${file.type}')"
+                                    >
+                                        下载
+                                    </button>` : 
+                                    `<button 
+                                        class="btn-download btn-disabled" 
+                                        onclick="promptLogin()"
+                                    >
+                                        请登录后下载
+                                    </button>`
+                                }
+                            </div>
+                        `;
+                    }).join('');
+                }
+            } catch (error) {
+                console.error('加载文件失败:', error);
+            }
+        }
+
+        // 处理文件下载
+        async function downloadFile(fileId, filename, type) {
+            try {
+                const token = localStorage.getItem('token');
+                const response = await fetch(API_CONFIG.getUrl(API_CONFIG.ENDPOINTS.FILE(fileId)), {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error('下载文件失败');
+                }
+
+                // 获取文件内容
+                const blob = await response.blob();
+                
+                // 创建下载链接
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.style.display = 'none';
+                a.href = url;
+                a.download = filename;
+                
+                // 触发下载
+                document.body.appendChild(a);
+                a.click();
+                
+                // 清理
+                window.URL.revokeObjectURL(url);
+                document.body.removeChild(a);
+            } catch (error) {
+                console.error('下载文件失败:', error);
+                alert('下载文件失败，请重试');
+            }
+        }
+
+        // 获取文件图标
+        function getFileIcon(type) {
+            if (type.startsWith('image/')) return '🖼️';
+            if (type.startsWith('video/')) return '🎥';
+            if (type.startsWith('audio/')) return '🎵';
+            if (type.startsWith('application/pdf')) return '📄';
+            if (type.startsWith('application/msword') || type.includes('document')) return '📝';
+            if (type.startsWith('text/')) return '📃';
+            return '📎';
+        }
+
+        // 格式化文件类型显示
+        function formatFileType(type) {
+            const typeMap = {
+                'image': '图片',
+                'video': '视频',
+                'audio': '音频',
+                'application/pdf': 'PDF',
+                'application/msword': 'Word',
+                'text': '文本'
+            };
+            
+            if (!type) return '未知';
+            
+            for (const [key, value] of Object.entries(typeMap)) {
+                if (type.startsWith(key)) return value;
+            }
+            return type;
+        }
+
+        // 格式化文件大小
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 B';
+            const k = 1024;
+            const sizes = ['B', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        // 加载评论列表
+        async function loadComments() {
+            try {
+                const response = await fetch(API_CONFIG.getUrl(API_CONFIG.ENDPOINTS.POST_COMMENTS(postId)));
+                const comments = await response.json();
+                const commentList = document.getElementById('commentList');
+                const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+
+                commentList.innerHTML = comments.map(comment => {
+                    // 创建正确的时间对象
+                    const createdDate = new Date(comment.created_at * 1000);
+                    
+                    return `
+                        <li class="comment-item">
+                            <div class="comment-meta">
+                                ${comment.author_name} · ${createdDate.toLocaleString()}
+                                ${(currentUser.id === comment.user_id || currentUser.role === 'admin') ? 
+                                    `<button class="delete-comment" onclick="deleteComment('${comment.id}')">删除</button>` : 
+                                    ''}
+                            </div>
+                            <div class="comment-content">${comment.content}</div>
+                        </li>
+                    `;
+                }).join('');
+            } catch (error) {
+                console.error('加载评论失败:', error);
+            }
+        }
+
+        // 提交评论
+        async function handleCommentSubmit(event) {
+            event.preventDefault();
+            const token = localStorage.getItem('token');
+            if (!token) {
+                alert('请先登录');
+                return;
+            }
+
+            const formData = new FormData(event.target);
+            const content = formData.get('content');
+
+            try {
+                const response = await fetch(API_CONFIG.getUrl(`${API_CONFIG.ENDPOINTS.POSTS}/${postId}/comments`), {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ content })
+                });
+
+                if (response.ok) {
+                    event.target.reset();
+                    loadComments();
+                } else {
+                    throw new Error('发表评论失败');
+                }
+            } catch (error) {
+                console.error('发表评论失败:', error);
+                alert('发表评论失败，请重试');
+            }
+        }
+
+        // 删除评论
+        async function deleteComment(commentId) {
+            if (!confirm('确定要删除这条评论吗？')) {
+                return;
+            }
+
+            const token = localStorage.getItem('token');
+            try {
+                const response = await fetch(API_CONFIG.getUrl(API_CONFIG.ENDPOINTS.COMMENT(commentId)), {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (response.ok) {
+                    loadComments();
+                } else {
+                    throw new Error('删除评论失败');
+                }
+            } catch (error) {
+                console.error('删除评论失败:', error);
+                alert('删除评论失败，请重试');
+            }
+        }
+
+        // 添加提示登录的函数
+        function promptLogin() {
+            if (confirm('请先登录后再下载文件。是否前往登录页面？')) {
+                window.location.href = '/login.html';
+            }
+        }
+
+        // 页面加载完成后执行
+        document.addEventListener('DOMContentLoaded', () => {
+            if (!postId) {
+                window.location.href = '/';
+                return;
+            }
+            checkAuthStatus();
+            loadPost();
+        });
+    </script>
+
+    <footer class="footer">
+        <div class="footer-content">
+            <div class="footer-links">
+                <a href="/">首页</a> | 
+                <a href="/message.html">留言</a> |
+                <a href="/about.html">关于</a> | 
+                <span>© 2024 个人博客</span>
+            </div>
+        </div>
+    </footer>
+</body>
+</html> 

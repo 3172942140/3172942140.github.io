@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>个人博客</title>
+    <link rel="icon" type="image/svg+xml" href="images/favicon.svg">
+    <link rel="icon" type="image/png" href="images/favicon.png">
+    <link rel="stylesheet" href="/css/common.css">
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <style>
+        .main-content {
+            max-width: 1200px;
+            margin: 6rem auto 2rem;
+            padding: 0 1rem;
+        }
+
+        /* 加载动画容器 */
+        .loading-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 200px;
+            width: 100%;
+        }
+
+        /* 加载动画 */
+        .loading-spinner {
+            width: 50px;
+            height: 50px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #3498db;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* 文章卡片加载动画 */
+        .post-card {
+            animation: fadeIn 0.5s ease;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .posts-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 2rem;
+            padding: 1rem;
+        }
+
+        .post-card {
+            background-color: #fff;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            overflow: hidden;
+            transition: all 0.3s ease;
+            border: 1px solid rgba(0,0,0,0.05);
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            cursor: pointer;
+        }
+
+        .post-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 15px rgba(0,0,0,0.1);
+            border-color: rgba(52, 152, 219, 0.2);
+        }
+
+        .post-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #3498db, #2ecc71);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .post-card:hover::before {
+            opacity: 1;
+        }
+
+        .post-content {
+            padding: 1.5rem;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .post-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 1rem;
+            line-height: 1.4;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            transition: color 0.3s ease;
+        }
+
+        .post-card:hover .post-title {
+            color: #3498db;
+        }
+
+        .post-excerpt {
+            color: #666;
+            margin-bottom: 1.5rem;
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            line-height: 1.6;
+            font-size: 0.95rem;
+            flex: 1;
+        }
+
+        /* Markdown 预览样式 */
+        .post-excerpt img,
+        .post-excerpt code,
+        .post-excerpt pre {
+            display: none;
+        }
+
+        .post-excerpt p {
+            margin: 0;
+        }
+
+        .post-excerpt h1,
+        .post-excerpt h2,
+        .post-excerpt h3,
+        .post-excerpt h4,
+        .post-excerpt h5,
+        .post-excerpt h6 {
+            font-size: inherit;
+            margin: 0;
+            font-weight: normal;
+        }
+
+        .post-excerpt ul,
+        .post-excerpt ol {
+            margin: 0;
+            padding-left: 1.5em;
+        }
+
+        .post-excerpt blockquote {
+            margin: 0;
+            padding-left: 1em;
+            border-left: 2px solid #eee;
+            color: #666;
+        }
+
+        .post-excerpt a {
+            color: inherit;
+            text-decoration: none;
+        }
+
+        .post-meta {
+            font-size: 0.875rem;
+            color: #95a5a6;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid #ecf0f1;
+        }
+
+        .post-author {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .post-author::before {
+            content: '👤';
+            font-size: 1rem;
+        }
+
+        .post-date {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .post-date::before {
+            content: '📅';
+            font-size: 1rem;
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                margin: 4rem auto 1.5rem;
+            }
+
+            .posts-container {
+                grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+                gap: 1.5rem;
+                padding: 1rem 0.5rem;
+            }
+
+            .post-content {
+                padding: 1.25rem;
+            }
+
+            .post-title {
+                font-size: 1.15rem;
+                -webkit-line-clamp: 2;
+            }
+
+            .post-excerpt {
+                font-size: 0.9rem;
+                margin-bottom: 1.25rem;
+                -webkit-line-clamp: 2;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .main-content {
+                margin: 3.5rem auto 1rem;
+                padding: 0 0.5rem;
+            }
+
+            .posts-container {
+                grid-template-columns: 1fr;
+                gap: 1rem;
+            }
+
+            .post-card {
+                border-radius: 8px;
+            }
+
+            .post-content {
+                padding: 1rem;
+            }
+
+            .post-title {
+                font-size: 1.1rem;
+            }
+
+            .post-meta {
+                flex-wrap: wrap;
+                gap: 0.75rem;
+                font-size: 0.8rem;
+            }
+        }
+    </style>
+    <script src="/js/config.js"></script>
+    <script src="/js/common.js"></script>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <a href="/" class="nav-brand">个人博客</a>
+            <button class="menu-toggle" aria-label="切换菜单">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+            <div class="nav-links">
+                <a href="/">首页</a>
+                <a href="/message.html">留言</a>
+                <a href="/about.html">关于</a>
+            </div>
+            <div class="auth-buttons">
+                <button class="btn-outline" id="loginBtn">登录</button>
+                <button class="btn-primary" id="registerBtn">注册</button>
+            </div>
+        </div>
+    </nav>
+
+    <main class="main-content">
+        <div class="posts-container" id="postsContainer">
+            <div class="loading-container" id="loadingContainer">
+                <div class="loading-spinner"></div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // 检查用户登录状态
+        function checkAuthStatus() {
+            const token = localStorage.getItem('token');
+            const authButtons = document.querySelector('.auth-buttons');
+            
+            if (token) {
+                const user = JSON.parse(localStorage.getItem('user'));
+                authButtons.innerHTML = `
+                    <span>欢迎，${user.name}</span>
+                    <button class="btn btn-outline" onclick="logout()">退出</button>
+                `;
+            }
+        }
+
+        // 处理 Markdown 预览文本
+        function createExcerpt(content, maxLength = 150) {
+            // 移除图片标记
+            content = content.replace(/!\[.*?\]\(.*?\)/g, '');
+            
+            // 移除代码块
+            content = content.replace(/```[\s\S]*?```/g, '');
+            
+            // 移除内联代码
+            content = content.replace(/`.*?`/g, '');
+            
+            // 移除 URL
+            content = content.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '$1');
+            
+            // 移除多余的空行
+            content = content.replace(/\n\s*\n/g, '\n');
+            
+            // 转换 Markdown 为 HTML
+            let html = marked.parse(content);
+            
+            // 提取纯文本
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = html;
+            let text = tempDiv.textContent || tempDiv.innerText;
+            
+            // 截取指定长度
+            text = text.trim();
+            if (text.length > maxLength) {
+                text = text.substring(0, maxLength) + '...';
+            }
+            
+            return text;
+        }
+
+        // 加载文章列表
+        async function loadPosts() {
+            const postsContainer = document.getElementById('postsContainer');
+            const loadingContainer = document.getElementById('loadingContainer');
+
+            try {
+                const response = await fetch(API_CONFIG.getUrl(API_CONFIG.ENDPOINTS.POSTS));
+                const posts = await response.json();
+                
+                // 清除加载动画
+                loadingContainer.remove();
+
+                // 使用 DocumentFragment 优化性能
+                const fragment = document.createDocumentFragment();
+
+                posts.forEach(post => {
+                    const postElement = document.createElement('article');
+                    postElement.className = 'post-card';
+                    postElement.onclick = () => window.location.href = `/post.html?id=${post.id}`;
+                    
+                    const createdDate = new Date(post.created_at * 1000);
+                    const excerpt = createExcerpt(post.content);
+                    
+                    postElement.innerHTML = `
+                        <div class="post-content">
+                            <h2 class="post-title">${post.title}</h2>
+                            <p class="post-excerpt">${excerpt}</p>
+                            <div class="post-meta">
+                                <div class="post-author">
+                                    <span>${post.author_name}</span>
+                                </div>
+                                <div class="post-date">
+                                    <span>${createdDate.toLocaleDateString()}</span>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    fragment.appendChild(postElement);
+                });
+
+                postsContainer.appendChild(fragment);
+            } catch (error) {
+                console.error('加载文章失败:', error);
+                loadingContainer.innerHTML = `
+                    <div style="text-align: center; color: #666;">
+                        <p>加载失败，请稍后重试</p>
+                        <button class="btn-outline" onclick="loadPosts()">重新加载</button>
+                    </div>
+                `;
+            }
+        }
+
+        // 退出登录
+        function logout() {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            window.location.reload();
+        }
+
+        // 页面加载完成后执行
+        document.addEventListener('DOMContentLoaded', () => {
+            checkAuthStatus();
+            loadPosts();
+
+            // 绑定登录按钮事件
+            document.getElementById('loginBtn').addEventListener('click', () => {
+                window.location.href = '/login.html';
+            });
+
+            // 绑定注册按钮事件
+            document.getElementById('registerBtn').addEventListener('click', () => {
+                window.location.href = '/register.html';
+            });
+        });
+    </script>
+
+    <footer class="footer">
+        <div class="footer-content">
+            <div class="footer-links">
+                <a href="/">首页</a> | 
+                <a href="/message.html">留言</a> |
+                <a href="/about.html">关于</a> | 
+                <span>© 2024 个人博客</span>
+            </div>
+        </div>
+    </footer>
+</body>
+</html>

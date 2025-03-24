@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>管理页面跳转 - 个人博客</title>
+</head>
+<body>
+    <script>
+        // 检查管理员登录状态
+        function checkAdminAuth() {
+            const token = localStorage.getItem('adminToken');
+            if (!token) {
+                // 如果没有管理员token，重定向到登录页面
+                window.location.href = '/admin/login.html';
+                return;
+            }
+
+            // 如果有token，重定向到管理控制台
+            window.location.href = '/admin/dashboard.html';
+        }
+
+        // 页面加载完成后立即执行检查
+        document.addEventListener('DOMContentLoaded', checkAdminAuth);
+    </script>
+</body>
+</html>
