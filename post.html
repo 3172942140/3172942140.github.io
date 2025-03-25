@@ -591,7 +591,9 @@
                 // 更新内容
                 document.getElementById('postTitle').textContent = post.title;
                 const createdDate = new Date(post.created_at * 1000);
-                document.getElementById('postMeta').textContent = `作者：${post.author_name} · ${createdDate.toLocaleString()}`;
+                // 减去8小时的毫秒数 (8 * 60 * 60 * 1000)
+                const localDate = new Date(createdDate.getTime() - (8 * 3600 * 1000));
+                document.getElementById('postMeta').textContent = `作者：${post.author_name} · ${localDate.toLocaleString()}`;
                 
                 // 使用 marked 渲染 Markdown
                 const contentHtml = marked.parse(post.content);

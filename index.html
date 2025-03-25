@@ -364,6 +364,8 @@
                     postElement.onclick = () => window.location.href = `/post.html?id=${post.id}`;
                     
                     const createdDate = new Date(post.created_at * 1000);
+                    // 减去8小时的毫秒数 (8 * 60 * 60 * 1000)
+                    const localDate = new Date(createdDate.getTime() - (8 * 3600 * 1000));
                     const excerpt = createExcerpt(post.content);
                     
                     postElement.innerHTML = `
@@ -375,7 +377,7 @@
                                     <span>${post.author_name}</span>
                                 </div>
                                 <div class="post-date">
-                                    <span>${createdDate.toLocaleDateString()}</span>
+                                    <span>${localDate.toLocaleDateString()}</span>
                                 </div>
                             </div>
                         </div>

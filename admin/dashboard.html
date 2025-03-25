@@ -854,13 +854,16 @@
                     // 创建新的 Date 对象，使用正确的时间戳（秒转毫秒）
                     const createdDate = new Date(post.created_at * 1000);
                     const updatedDate = new Date(post.updated_at * 1000);
+                    // 减去8小时的毫秒数 (8 * 60 * 60 * 1000)
+                    const localCreatedDate = new Date(createdDate.getTime() - (8 * 3600 * 1000));
+                    const localUpdatedDate = new Date(updatedDate.getTime() - (8 * 3600 * 1000));
                     
                     return `
                         <tr>
                             <td>${post.title}</td>
                             <td>${post.author_name}</td>
-                            <td>${createdDate.toLocaleString()}</td>
-                            <td>${updatedDate.toLocaleString()}</td>
+                            <td>${localCreatedDate.toLocaleString()}</td>
+                            <td>${localUpdatedDate.toLocaleString()}</td>
                             <td>${post.status === 'published' ? '已发布' : '草稿'}</td>
                             <td class="action-buttons">
                                 <button class="btn btn-sm btn-warning" onclick="editPost('${post.id}')">编辑</button>
@@ -1274,13 +1277,15 @@
                 tableBody.innerHTML = comments.map(comment => {
                     // 创建一个新的 Date 对象，使用正确的时间戳
                     const createdDate = new Date(comment.created_at * 1000);
+                    // 减去8小时的毫秒数 (8 * 60 * 60 * 1000)
+                    const localDate = new Date(createdDate.getTime() - (8 * 3600 * 1000));
                     
                     return `
                         <tr>
                             <td>${comment.content}</td>
                             <td>${comment.post_title || '已删除的文章'}</td>
                             <td>${comment.author_name || '未知用户'}</td>
-                            <td>${createdDate.toLocaleString()}</td>
+                            <td>${localDate.toLocaleString()}</td>
                             <td class="action-buttons">
                                 <button class="btn btn-sm btn-danger" onclick="deleteComment('${comment.id}')">删除</button>
                             </td>
@@ -1335,29 +1340,36 @@
                 const files = await response.json();
                 const tableBody = document.getElementById('filesTableBody');
                 
-                tableBody.innerHTML = files.map(file => `
-                    <tr>
-                        <td>${file.filename}</td>
-                        <td>${formatFileType(file.type)}</td>
-                        <td>${formatFileSize(file.size)}</td>
-                        <td>${file.uploader_name || '未知'}</td>
-                        <td>${new Date(file.created_at).toLocaleString()}</td>
-                        <td>
-                            <select 
-                                class="file-post-select" 
-                                onchange="updateFilePost('${file.id}', this.value)"
-                                data-current="${file.post_id || ''}"
-                            >
-                                <option value="">不关联文章</option>
-                                <!-- 文章选项将通过 loadPostsForFileSelect 动态加载 -->
-                            </select>
-                        </td>
-                        <td class="action-buttons">
-                            <a href="${API_CONFIG.getUrl(API_CONFIG.ENDPOINTS.FILE(file.id))}" class="btn btn-sm btn-info" target="_blank">查看</a>
-                            <button class="btn btn-sm btn-danger" onclick="deleteFile('${file.id}')">删除</button>
-                        </td>
-                    </tr>
-                `).join('');
+                tableBody.innerHTML = files.map(file => {
+                    // 创建一个新的 Date 对象，使用正确的时间戳
+                    const createdDate = new Date(file.created_at * 1000);
+                    // 减去8小时的毫秒数 (8 * 60 * 60 * 1000)
+                    const localDate = new Date(createdDate.getTime() - (8 * 3600 * 1000));
+                    
+                    return `
+                        <tr>
+                            <td>${file.filename}</td>
+                            <td>${formatFileType(file.type)}</td>
+                            <td>${formatFileSize(file.size)}</td>
+                            <td>${file.uploader_name || '未知'}</td>
+                            <td>${localDate.toLocaleString()}</td>
+                            <td>
+                                <select 
+                                    class="file-post-select" 
+                                    onchange="updateFilePost('${file.id}', this.value)"
+                                    data-current="${file.post_id || ''}"
+                                >
+                                    <option value="">不关联文章</option>
+                                    <!-- 文章选项将通过 loadPostsForFileSelect 动态加载 -->
+                                </select>
+                            </td>
+                            <td class="action-buttons">
+                                <a href="${API_CONFIG.getUrl(API_CONFIG.ENDPOINTS.FILE(file.id))}" class="btn btn-sm btn-info" target="_blank">查看</a>
+                                <button class="btn btn-sm btn-danger" onclick="deleteFile('${file.id}')">删除</button>
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
 
                 // 加载每个文件的文章选项
                 loadPostsForFileSelect();
@@ -1644,6 +1656,8 @@
 
                 messageList.innerHTML = messages.map(message => {
                     const createdDate = new Date(message.created_at * 1000);
+                    // 减去8小时的毫秒数 (8 * 60 * 60 * 1000)
+                    const localDate = new Date(createdDate.getTime() - (8 * 3600 * 1000));
                     const isAdmin = currentUser.role === 'admin';
                     const isAuthor = currentUser.id === message.user_id;
                     const canDelete = isAdmin || isAuthor;
@@ -1651,7 +1665,7 @@
                     return `
                         <li class="message-item">
                             <div class="message-content">
-                                <strong>${message.author_name}</strong> · ${createdDate.toLocaleString()}<br>
+                                <strong>${message.author_name}</strong> · ${localDate.toLocaleString()}<br>
                                 ${message.content}
                                 ${message.image_path ? `<br><button class="view-image-btn" onclick="showImageViewer('${API_CONFIG.getUrl(`/api/messages/${message.id}/image`)}')">查看图片</button>` : ''}
                             </div>
