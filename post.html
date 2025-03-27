@@ -903,7 +903,7 @@
                             // 清除现有内容和事件
                             videoPlayer.innerHTML = '';
                             
-                            // 直接设置视频源并添加认证头
+                            // 创建 XMLHttpRequest 来加载视频
                             const loadVideo = () => {
                                 try {
                                     // 移除加载提示
@@ -915,7 +915,7 @@
                                     // 设置视频属性
                                     videoPlayer.controls = true;
                                     videoPlayer.autoplay = false;
-                                    videoPlayer.preload = 'auto';
+                                    videoPlayer.preload = 'metadata';
                                     videoPlayer.playsInline = true;
                                     videoPlayer.muted = false;
                                     videoPlayer.volume = 1;
@@ -958,8 +958,39 @@
                                         document.getElementById('videoInfo').style.display = 'block';
                                     }
 
-                                    // 设置视频源
-                                    videoPlayer.src = videoUrl;
+                                    // 使用 Fetch API 获取视频 Blob
+                                    fetch(videoUrl, {
+                                        headers: {
+                                            'Authorization': `Bearer ${token}`
+                                        }
+                                    })
+                                    .then(response => {
+                                        if (!response.ok) {
+                                            throw new Error('Network response was not ok');
+                                        }
+                                        return response.blob();
+                                    })
+                                    .then(blob => {
+                                        // 创建 Blob URL
+                                        const blobUrl = URL.createObjectURL(blob);
+                                        videoPlayer.src = blobUrl;
+                                        
+                                        // 视频加载完成后释放 Blob URL
+                                        videoPlayer.addEventListener('loadeddata', () => {
+                                            URL.revokeObjectURL(blobUrl);
+                                        }, { once: true });
+                                    })
+                                    .catch(error => {
+                                        console.error('Error loading video:', error);
+                                        const container = videoSection.querySelector('.video-container');
+                                        container.innerHTML = `
+                                            <div class="video-error">
+                                                <p>视频加载失败，请刷新页面重试</p>
+                                                <button class="btn-outline" onclick="window.location.reload()">刷新页面</button>
+                                            </div>
+                                        `;
+                                    });
+
                                 } catch (error) {
                                     console.error('Video initialization error:', error);
                                     const container = videoSection.querySelector('.video-container');
@@ -974,7 +1005,6 @@
 
                             // 在移动设备上，需要用户交互才能初始化视频
                             if (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
-                                const container = videoSection.querySelector('.video-container');
                                 const loadingElement = videoSection.querySelector('.video-loading');
                                 if (loadingElement) {
                                     loadingElement.innerHTML = `
