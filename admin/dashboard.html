@@ -1919,6 +1919,17 @@
             const submitBtn = form.querySelector('button[type="submit"]');
             const formData = new FormData(form);
             const file = formData.get('file');
+
+            // 检查是否为移动设备
+            const isMobile = window.innerWidth <= 768;
+            
+            // 如果是视频文件且在移动设备上，阻止上传
+            if (isMobile && file.type.startsWith('video/')) {
+                alert('移动设备不支持视频上传，请使用电脑端上传视频。');
+                form.reset();
+                return;
+            }
+
             const progressElement = document.querySelector('.upload-progress');
             const progressBar = progressElement.querySelector('.progress-bar');
             const progressPercentage = progressElement.querySelector('.progress-percentage');
@@ -2487,14 +2498,10 @@
                     await new Promise(resolve => {
                         startButton.onclick = async () => {
                             try {
-                                // 尝试创建音频上下文，但不阻止处理过程
-                                try {
-                                    audioContext = new (window.AudioContext || window.webkitAudioContext)();
-                                    await audioContext.resume();
-                                    audioContextStarted = true;
-                                } catch(e) {
-                                    console.warn('音频上下文初始化失败，将继续处理视频但可能没有音频:', e);
-                                }
+                                // 创建音频上下文
+                                audioContext = new AudioContext();
+                                await audioContext.resume();
+                                audioContextStarted = true;
                                 
                                 // 尝试播放视频
                                 try {
@@ -2507,16 +2514,11 @@
                                 startButton.remove();
                                 resolve();
                             } catch(e) {
-                                console.warn('初始化过程中出现问题，但继续处理:', e);
+                                console.error('初始化音频上下文失败:', e);
                                 startButton.remove();
                                 resolve();
                             }
                         };
-                        
-                        // 添加触摸事件处理
-                        startButton.addEventListener('touchstart', (e) => {
-                            e.preventDefault(); // 防止默认行为
-                        });
                     });
                     
                     // 捕获画布视频流
@@ -2532,7 +2534,7 @@
                     // 改进音频轨道捕获逻辑
                     let hasAudioTrack = false;
                     try {
-                        if (hasAudio && audioContextStarted && audioContext) {
+                        if (hasAudio && audioContextStarted) {
                             // 使用已创建的音频上下文
                             const source = audioContext.createMediaElementSource(videoEl);
                             const destination = audioContext.createMediaStreamDestination();
@@ -2567,9 +2569,7 @@
                             }
                         }
                     } catch(e) {
-                        console.warn('合并音频和视频轨道失败，将继续处理但可能没有音频:', e);
-                        // 如果音频处理失败，继续使用原始画布流
-                        combinedStream = canvasStream;
+                        console.warn('合并音频和视频轨道失败:', e);
                     }
                     
                     if (!hasAudioTrack && hasAudio) {

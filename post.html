@@ -894,6 +894,34 @@
                         // 显示视频区域
                         videoSection.style.display = 'block';
 
+                        // 显示视频时长
+                        if (videoFile.duration_formatted) {
+                            document.getElementById('videoDuration').textContent = videoFile.duration_formatted;
+                            document.getElementById('videoInfo').style.display = 'block';
+                        } else if (videoFile.duration) {
+                            // 如果没有格式化的时长，自己格式化
+                            const minutes = Math.floor(videoFile.duration / 60);
+                            const seconds = Math.floor(videoFile.duration % 60);
+                            const formattedDuration = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+                            document.getElementById('videoDuration').textContent = formattedDuration;
+                            document.getElementById('videoInfo').style.display = 'block';
+                        }
+                        
+                        // 从文件名确定具体的MIME类型
+                        const getVideoMimeType = (filename) => {
+                            const ext = filename.split('.').pop().toLowerCase();
+                            const mimeTypes = {
+                                'webm': 'video/webm',
+                                'mp4': 'video/mp4',
+                                'mov': 'video/quicktime',
+                                'avi': 'video/x-msvideo'
+                            };
+                            return mimeTypes[ext] || 'video/mp4';
+                        };
+                        
+                        const videoMimeType = getVideoMimeType(videoFile.filename);
+                        console.log('Video MIME type:', videoMimeType);
+                        
                         // 设置视频源
                         const token = localStorage.getItem('token');
                         const videoUrl = API_CONFIG.getUrl(API_CONFIG.ENDPOINTS.FILE(videoFile.id));
@@ -903,119 +931,146 @@
                             // 清除现有内容和事件
                             videoPlayer.innerHTML = '';
                             
-                            // 创建 XMLHttpRequest 来加载视频
-                            const loadVideo = () => {
-                                try {
-                                    // 移除加载提示
-                                    const loadingElement = videoSection.querySelector('.video-loading');
-                                    if (loadingElement) {
-                                        loadingElement.remove();
-                                    }
+                            // 创建 MediaSource 实例
+                            const mediaSource = new MediaSource();
+                            const sourceUrl = URL.createObjectURL(mediaSource);
+                            videoPlayer.src = sourceUrl;
+                            
+                            // 设置视频属性
+                            videoPlayer.controls = true;
+                            videoPlayer.autoplay = false;
+                            videoPlayer.preload = 'auto';
+                            videoPlayer.playsInline = true;
+                            videoPlayer.muted = false;
+                            videoPlayer.volume = 1;
 
-                                    // 设置视频属性
-                                    videoPlayer.controls = true;
-                                    videoPlayer.autoplay = false;
-                                    videoPlayer.preload = 'metadata';
-                                    videoPlayer.playsInline = true;
-                                    videoPlayer.muted = false;
-                                    videoPlayer.volume = 1;
-                                    
-                                    // 更新视频时长显示的函数
-                                    const updateVideoDuration = () => {
-                                        const duration = videoPlayer.duration;
-                                        if (!isNaN(duration) && isFinite(duration) && duration > 0) {
-                                            const minutes = Math.floor(duration / 60);
-                                            const seconds = Math.floor(duration % 60);
-                                            const formattedDuration = `${minutes}:${seconds.toString().padStart(2, '0')}`;
-                                            document.getElementById('videoDuration').textContent = formattedDuration;
-                                            document.getElementById('videoInfo').style.display = 'block';
-                                        }
-                                    };
-
-                                    // 添加事件监听器
-                                    videoPlayer.addEventListener('loadedmetadata', updateVideoDuration);
-                                    videoPlayer.addEventListener('durationchange', updateVideoDuration);
-                                    videoPlayer.addEventListener('error', (e) => {
-                                        console.error('Video error:', videoPlayer.error);
-                                        const container = videoSection.querySelector('.video-container');
-                                        container.innerHTML = `
-                                            <div class="video-error">
-                                                <p>视频加载失败，请刷新页面重试</p>
-                                                <button class="btn-outline" onclick="window.location.reload()">刷新页面</button>
-                                            </div>
-                                        `;
-                                    });
-
-                                    // 如果服务器提供了时长信息，优先使用
-                                    if (videoFile.duration_formatted) {
-                                        document.getElementById('videoDuration').textContent = videoFile.duration_formatted;
-                                        document.getElementById('videoInfo').style.display = 'block';
-                                    } else if (videoFile.duration) {
-                                        const minutes = Math.floor(videoFile.duration / 60);
-                                        const seconds = Math.floor(videoFile.duration % 60);
-                                        const formattedDuration = `${minutes}:${seconds.toString().padStart(2, '0')}`;
-                                        document.getElementById('videoDuration').textContent = formattedDuration;
-                                        document.getElementById('videoInfo').style.display = 'block';
-                                    }
-
-                                    // 使用 Fetch API 获取视频 Blob
-                                    fetch(videoUrl, {
-                                        headers: {
-                                            'Authorization': `Bearer ${token}`
-                                        }
-                                    })
-                                    .then(response => {
-                                        if (!response.ok) {
-                                            throw new Error('Network response was not ok');
-                                        }
-                                        return response.blob();
-                                    })
-                                    .then(blob => {
-                                        // 创建 Blob URL
-                                        const blobUrl = URL.createObjectURL(blob);
-                                        videoPlayer.src = blobUrl;
-                                        
-                                        // 视频加载完成后释放 Blob URL
-                                        videoPlayer.addEventListener('loadeddata', () => {
-                                            URL.revokeObjectURL(blobUrl);
-                                        }, { once: true });
-                                    })
-                                    .catch(error => {
-                                        console.error('Error loading video:', error);
-                                        const container = videoSection.querySelector('.video-container');
-                                        container.innerHTML = `
-                                            <div class="video-error">
-                                                <p>视频加载失败，请刷新页面重试</p>
-                                                <button class="btn-outline" onclick="window.location.reload()">刷新页面</button>
-                                            </div>
-                                        `;
-                                    });
-
-                                } catch (error) {
-                                    console.error('Video initialization error:', error);
-                                    const container = videoSection.querySelector('.video-container');
-                                    container.innerHTML = `
-                                        <div class="video-error">
-                                            <p>视频初始化失败，请刷新页面重试</p>
-                                            <button class="btn-outline" onclick="window.location.reload()">刷新页面</button>
-                                        </div>
-                                    `;
+                            // 更新视频时长显示的函数
+                            const updateVideoDuration = () => {
+                                const duration = videoPlayer.duration;
+                                // 只在 duration 是有效的数值时更新显示
+                                if (!isNaN(duration) && isFinite(duration) && duration > 0) {
+                                    const minutes = Math.floor(duration / 60);
+                                    const seconds = Math.floor(duration % 60);
+                                    const formattedDuration = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+                                    document.getElementById('videoDuration').textContent = formattedDuration;
+                                    document.getElementById('videoInfo').style.display = 'block';
                                 }
                             };
-
-                            // 在移动设备上，需要用户交互才能初始化视频
-                            if (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
-                                const loadingElement = videoSection.querySelector('.video-loading');
-                                if (loadingElement) {
-                                    loadingElement.innerHTML = `
-                                        <button class="btn-primary" style="margin: 10px;" onclick="this.parentElement.remove(); loadVideo();">
-                                            点击加载视频
-                                        </button>
-                                    `;
+                            
+                            // 添加视频加载完成事件处理
+                            videoPlayer.addEventListener('loadedmetadata', updateVideoDuration);
+                            videoPlayer.addEventListener('durationchange', updateVideoDuration);
+                            
+                            mediaSource.addEventListener('sourceopen', async () => {
+                                const mimeCodec = 'video/webm; codecs="vp8,opus"';
+                                
+                                // 检查浏览器是否支持该编解码器
+                                if (!MediaSource.isTypeSupported(mimeCodec)) {
+                                    console.error('Unsupported MIME type or codec:', mimeCodec);
+                                    // 回退到直接播放
+                                    videoPlayer.src = videoUrl;
+                                    return;
                                 }
-                            } else {
-                                loadVideo();
-                            }
+                                
+                                // 创建 SourceBuffer
+                                const sourceBuffer = mediaSource.addSourceBuffer(mimeCodec);
+                                let queue = [];
+                                let isAppending = false;
+                                
+                                // 处理队列中的数据
+                                async function appendNextInQueue() {
+                                    if (queue.length === 0 || isAppending) return;
+                                    isAppending = true;
+                                    
+                                    try {
+                                        const data = queue.shift();
+                                        await new Promise((resolve, reject) => {
+                                            sourceBuffer.addEventListener('updateend', resolve, { once: true });
+                                            sourceBuffer.addEventListener('error', reject, { once: true });
+                                            sourceBuffer.appendBuffer(data);
+                                        });
+                                    } catch (e) {
+                                        console.error('Error appending buffer:', e);
+                                    }
+                                    
+                                    isAppending = false;
+                                    appendNextInQueue();
+                                }
+                                
+                                try {
+                                    const response = await fetch(videoUrl, {
+                                        headers: {
+                                            'Authorization': `Bearer ${token}`,
+                                            'Range': 'bytes=0-'
+                                        }
+                                    });
+                                    
+                                    if (!response.ok) throw new Error('Network response was not ok');
+                                    
+                                    const reader = response.body.getReader();
+                                    const contentLength = response.headers.get('Content-Length');
+                                    let receivedLength = 0;
+                                    
+                                    // 更新加载进度显示
+                                    const loadingElement = videoSection.querySelector('.video-loading');
+                                    const progressElement = document.getElementById('loadingProgress');
+                                    
+                                    while (true) {
+                                        const { done, value } = await reader.read();
+                                        
+                                        if (done) {
+                                            // 所有数据接收完毕，关闭 MediaSource
+                                            if (queue.length === 0 && !isAppending) {
+                                                mediaSource.endOfStream();
+                                            }
+                                            break;
+                                        }
+                                        
+                                        // 更新进度
+                                        receivedLength += value.length;
+                                        if (contentLength) {
+                                            const percent = Math.round((receivedLength / contentLength) * 100);
+                                            if (progressElement) {
+                                                progressElement.textContent = `${percent}%`;
+                                            }
+                                        }
+                                        
+                                        // 将数据添加到队列
+                                        queue.push(value);
+                                        appendNextInQueue();
+                                        
+                                        // 当缓冲足够时开始播放
+                                        if (!videoPlayer.playing && sourceBuffer.buffered.length > 0) {
+                                            const buffered = sourceBuffer.buffered.end(0) - sourceBuffer.buffered.start(0);
+                                            if (buffered >= 5) { // 5秒缓冲
+                                                loadingElement?.remove();
+                                            }
+                                        }
+                                    }
+                                } catch (error) {
+                                    console.error('Streaming failed:', error);
+                                    // 回退到直接播放
+                                    videoPlayer.src = videoUrl;
+                                    // 确保在回退模式下也能显示时长
+                                    videoPlayer.addEventListener('loadedmetadata', updateVideoDuration);
+                                    videoPlayer.addEventListener('durationchange', updateVideoDuration);
+                                }
+                            });
+                            
+                            // 错误处理
+                            videoPlayer.addEventListener('error', (e) => {
+                                console.error('Video error:', e);
+                                const errorMessage = videoPlayer.error ? 
+                                    `错误代码: ${videoPlayer.error.code}, 信息: ${videoPlayer.error.message}` : 
+                                    '未知错误';
+                                console.error(errorMessage);
+                                
+                                // 如果流式播放失败，回退到直接播放
+                                if (videoPlayer.src !== videoUrl) {
+                                    console.log('Falling back to direct playback');
+                                    videoPlayer.src = videoUrl;
+                                }
+                            });
                         } else {
                             // 未登录用户显示提示
                             const container = videoSection.querySelector('.video-container');
