@@ -513,6 +513,58 @@
             0% { transform: translateX(-100%); }
             100% { transform: translateX(100%); }
         }
+
+        /* 视频播放器样式 */
+        .video-section {
+            margin: 1rem 0;
+            display: none;
+        }
+
+        .video-container {
+            position: relative;
+            width: 100%;
+            padding-top: 56.25%; /* 16:9 宽高比 */
+            background: #f8f9fa;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .video-player {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+
+        .video-loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            color: #666;
+        }
+
+        .video-error {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            color: #721c24;
+            background: rgba(248, 215, 218, 0.9);
+            padding: 1rem;
+            border-radius: 4px;
+            width: 80%;
+        }
+
+        @media (max-width: 768px) {
+            .video-section {
+                margin: 0.5rem 0;
+            }
+        }
     </style>
 </head>
 <body>
@@ -551,6 +603,20 @@
                 <h1 class="post-title" id="postTitle"></h1>
                 <div class="post-meta" id="postMeta"></div>
             </header>
+            
+            <!-- 添加视频播放器区域 -->
+            <section class="video-section" id="videoSection">
+                <div class="video-container">
+                    <div class="video-loading">
+                        <div class="loading-spinner"></div>
+                        <p>视频加载中...</p>
+                    </div>
+                    <video class="video-player" id="videoPlayer" controls>
+                        您的浏览器不支持 HTML5 视频播放器
+                    </video>
+                </div>
+            </section>
+
             <div class="post-content markdown-body" id="postContent" style="display: none;"></div>
             
             <!-- 添加文件展示区域 -->
@@ -782,6 +848,211 @@
                 const files = await response.json();
                 
                 if (files && files.length > 0) {
+                    // 检查是否有视频文件
+                    const videoFile = files.find(file => file.type === 'video');
+                    if (videoFile) {
+                        const videoSection = document.getElementById('videoSection');
+                        const videoPlayer = document.getElementById('videoPlayer');
+                        
+                        // 显示视频区域
+                        videoSection.style.display = 'block';
+                        
+                        // 从文件名确定具体的MIME类型
+                        const getVideoMimeType = (filename) => {
+                            const ext = filename.split('.').pop().toLowerCase();
+                            const mimeTypes = {
+                                'webm': 'video/webm',
+                                'mp4': 'video/mp4',
+                                'mov': 'video/quicktime',
+                                'avi': 'video/x-msvideo'
+                            };
+                            return mimeTypes[ext] || 'video/mp4';
+                        };
+                        
+                        const videoMimeType = getVideoMimeType(videoFile.filename);
+                        console.log('Video MIME type:', videoMimeType);
+                        
+                        // 设置视频源
+                        const token = localStorage.getItem('token');
+                        const videoUrl = API_CONFIG.getUrl(API_CONFIG.ENDPOINTS.FILE(videoFile.id));
+                        
+                        // 添加视频加载事件处理
+                        videoPlayer.onloadeddata = () => {
+                            // 移除加载动画
+                            const loading = videoSection.querySelector('.video-loading');
+                            if (loading) loading.remove();
+                            
+                            // 设置视频质量为自动
+                            if ('mediaSettings' in videoPlayer) {
+                                try {
+                                    videoPlayer.mediaSettings.preferredVideoQuality = 'auto';
+                                } catch (e) {
+                                    console.warn('Could not set preferred video quality:', e);
+                                }
+                            }
+                        };
+                        
+                        videoPlayer.onerror = (e) => {
+                            console.error('视频加载错误:', e);
+                            const container = videoSection.querySelector('.video-container');
+                            container.innerHTML = `
+                                <div class="video-error">
+                                    <p>视频加载失败</p>
+                                    <button class="btn-outline" onclick="reloadVideo('${videoFile.id}')">重新加载</button>
+                                </div>
+                            `;
+                        };
+                        
+                        // 如果需要认证，添加认证头
+                        if (token) {
+                            // 清除现有内容和事件
+                            videoPlayer.innerHTML = ''; 
+                            
+                            // 优化：使用Fetch API获取视频数据并直接设置为源，避免多次下载
+                            // 添加状态提示
+                            const loadingElement = videoSection.querySelector('.video-loading');
+                            loadingElement.innerHTML = `
+                                <div class="loading-spinner"></div>
+                                <p>视频加载中...<span id="loadingProgress">0%</span></p>
+                            `;
+                            
+                            // 使用Fetch API获取视频并显示进度
+                            const controller = new AbortController();
+                            const signal = controller.signal;
+                            
+                            fetch(videoUrl, {
+                                headers: {
+                                    'Authorization': `Bearer ${token}`,
+                                    'Range': 'bytes=0-' // 请求整个文件
+                                },
+                                signal: signal
+                            })
+                            .then(response => {
+                                // 获取文件大小
+                                const contentLength = response.headers.get('Content-Length');
+                                const total = parseInt(contentLength, 10) || 0;
+                                let loaded = 0;
+                                
+                                // 创建进度跟踪的reader
+                                const reader = response.body.getReader();
+                                const progressElement = document.getElementById('loadingProgress');
+                                
+                                // 处理数据块
+                                return new Response(
+                                    new ReadableStream({
+                                        async start(controller) {
+                                            while (true) {
+                                                const { done, value } = await reader.read();
+                                                if (done) break;
+                                                
+                                                loaded += value.length;
+                                                if (total > 0 && progressElement) {
+                                                    const percent = Math.round((loaded / total) * 100);
+                                                    progressElement.textContent = `${percent}%`;
+                                                }
+                                                
+                                                controller.enqueue(value);
+                                            }
+                                            controller.close();
+                                        }
+                                    })
+                                ).blob();
+                            })
+                            .then(blob => {
+                                // 创建视频资源并设置属性
+                                const objectUrl = URL.createObjectURL(blob);
+                                
+                                // 清除现有的source元素
+                                videoPlayer.innerHTML = '';
+                                
+                                // 添加多个source元素以支持不同格式
+                                if (videoMimeType === 'video/webm') {
+                                    // WebM格式
+                                    const webmSource = document.createElement('source');
+                                    webmSource.src = objectUrl;
+                                    webmSource.type = 'video/webm';  // 简化MIME类型
+                                    videoPlayer.appendChild(webmSource);
+                                    
+                                    console.log('Added WebM source:', webmSource);
+                                } else {
+                                    // 其他格式
+                                    const source = document.createElement('source');
+                                    source.src = objectUrl;
+                                    source.type = videoMimeType;
+                                    videoPlayer.appendChild(source);
+                                    
+                                    console.log('Added source:', source);
+                                }
+                                
+                                // 设置视频属性
+                                videoPlayer.controls = true;
+                                videoPlayer.autoplay = false;
+                                videoPlayer.preload = 'auto';
+                                videoPlayer.playsInline = true;
+                                videoPlayer.muted = false;  // 确保不是静音的
+                                videoPlayer.volume = 1;     // 设置音量为最大
+                                
+                                // 添加加载事件监听
+                                videoPlayer.addEventListener('loadedmetadata', () => {
+                                    console.log('Video metadata loaded:', {
+                                        duration: videoPlayer.duration,
+                                        videoWidth: videoPlayer.videoWidth,
+                                        videoHeight: videoPlayer.videoHeight
+                                    });
+                                });
+                                
+                                // 视频播放结束时释放objectURL
+                                videoPlayer.onended = () => {
+                                    URL.revokeObjectURL(objectUrl);
+                                };
+                                
+                                // 添加错误处理
+                                videoPlayer.addEventListener('error', (e) => {
+                                    console.error('视频播放错误:', e);
+                                    const errorMessage = videoPlayer.error ? 
+                                        `错误代码: ${videoPlayer.error.code}, 信息: ${videoPlayer.error.message}` : 
+                                        '未知错误';
+                                    console.error(errorMessage);
+                                });
+                            })
+                            .catch(error => {
+                                // 只有非AbortError才报告
+                                if (error.name !== 'AbortError') {
+                                    console.error('加载视频失败:', error);
+                                    videoPlayer.onerror();
+                                }
+                            });
+                            
+                            // 添加超时处理，30秒后如果还没加载完成则提示
+                            setTimeout(() => {
+                                const loading = videoSection.querySelector('.video-loading');
+                                if (loading) {
+                                    const progressElement = document.getElementById('loadingProgress');
+                                    const progress = progressElement ? progressElement.textContent : '0%';
+                                    
+                                    // 如果进度不足90%，显示加载缓慢提示
+                                    if (progress !== '100%') {
+                                        loading.innerHTML += `
+                                            <p style="margin-top: 10px; color: #e74c3c;">
+                                                加载较慢，请耐心等待或<a href="#" onclick="reloadVideo('${videoFile.id}'); return false;" style="color: #3498db; text-decoration: underline;">重新加载</a>
+                                            </p>
+                                        `;
+                                    }
+                                }
+                            }, 30000);
+                            
+                        } else {
+                            // 未登录用户显示提示
+                            const container = videoSection.querySelector('.video-container');
+                            container.innerHTML = `
+                                <div class="video-error">
+                                    <p>请登录后观看视频</p>
+                                    <button class="btn-outline" onclick="promptLogin()">去登录</button>
+                                </div>
+                            `;
+                        }
+                    }
+
                     const filesGrid = document.getElementById('filesGrid');
                     document.getElementById('filesSection').style.display = 'block';
                     
@@ -1018,6 +1289,104 @@
                 // 保存当前页面URL，登录后可以返回
                 localStorage.setItem('redirectUrl', window.location.href);
                 window.location.href = '/login.html';
+            }
+        }
+
+        // 重新加载视频
+        async function reloadVideo(videoId) {
+            const videoSection = document.getElementById('videoSection');
+            const videoPlayer = document.getElementById('videoPlayer');
+            const token = localStorage.getItem('token');
+            
+            if (!token) {
+                promptLogin();
+                return;
+            }
+            
+            // 重置视频容器
+            const container = videoSection.querySelector('.video-container');
+            container.innerHTML = `
+                <div class="video-loading">
+                    <div class="loading-spinner"></div>
+                    <p>视频加载中...<span id="loadingProgress">0%</span></p>
+                </div>
+                <video class="video-player" id="videoPlayer" controls>
+                    您的浏览器不支持 HTML5 视频播放器
+                </video>
+            `;
+            
+            try {
+                const videoUrl = API_CONFIG.getUrl(API_CONFIG.ENDPOINTS.FILE(videoId));
+                const newVideoPlayer = container.querySelector('.video-player');
+                const progressElement = document.getElementById('loadingProgress');
+                
+                const response = await fetch(videoUrl, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                
+                if (!response.ok) {
+                    throw new Error('加载视频失败');
+                }
+                
+                // 获取文件大小
+                const contentLength = response.headers.get('Content-Length');
+                const total = parseInt(contentLength, 10) || 0;
+                let loaded = 0;
+                
+                // 创建进度跟踪的reader
+                const reader = response.body.getReader();
+                
+                // 处理数据块
+                const stream = new ReadableStream({
+                    async start(controller) {
+                        while (true) {
+                            const { done, value } = await reader.read();
+                            if (done) break;
+                            
+                            loaded += value.length;
+                            if (total > 0 && progressElement) {
+                                const percent = Math.round((loaded / total) * 100);
+                                progressElement.textContent = `${percent}%`;
+                            }
+                            
+                            controller.enqueue(value);
+                        }
+                        controller.close();
+                    }
+                });
+                
+                const blob = await new Response(stream).blob();
+                const objectUrl = URL.createObjectURL(blob);
+                
+                newVideoPlayer.src = objectUrl;
+                
+                newVideoPlayer.onloadeddata = () => {
+                    const loading = container.querySelector('.video-loading');
+                    if (loading) loading.remove();
+                };
+                
+                newVideoPlayer.onended = () => {
+                    URL.revokeObjectURL(objectUrl);
+                };
+                
+                newVideoPlayer.onerror = () => {
+                    container.innerHTML = `
+                        <div class="video-error">
+                            <p>视频加载失败</p>
+                            <button class="btn-outline" onclick="reloadVideo('${videoId}')">重新加载</button>
+                        </div>
+                    `;
+                };
+            } catch (error) {
+                console.error('重新加载视频失败:', error);
+                container.innerHTML = `
+                    <div class="video-error">
+                        <p>视频加载失败</p>
+                        <button class="btn-outline" onclick="reloadVideo('${videoId}')">重新加载</button>
+                    </div>
+                `;
             }
         }
 

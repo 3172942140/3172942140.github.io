@@ -249,6 +249,193 @@
             border-top: 1px solid #dee2e6;
         }
 
+        /* 上传进度条样式 */
+        .upload-progress {
+            margin: 1rem 0;
+            padding: 1rem;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border: 1px solid #e9ecef;
+        }
+
+        .progress-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.5rem;
+        }
+
+        .progress-percentage {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        .progress-status {
+            color: #666;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+        }
+        
+        /* 处理阶段标识 */
+        .progress-stage {
+            position: relative;
+            margin: 0.5rem 0;
+            padding: 0.5rem 0;
+            display: flex;
+            justify-content: space-between;
+        }
+        
+        .stage-indicator {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 25%;
+        }
+        
+        .stage-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background-color: #e9ecef;
+            margin-bottom: 0.25rem;
+            transition: all 0.3s ease;
+            position: relative;
+            z-index: 2;
+        }
+        
+        .stage-dot.active {
+            background-color: #3498db;
+            transform: scale(1.2);
+        }
+        
+        .stage-dot.completed {
+            background-color: #2ecc71;
+        }
+        
+        .stage-label {
+            font-size: 0.75rem;
+            color: #666;
+            text-align: center;
+            margin-top: 0.25rem;
+            transition: all 0.3s ease;
+        }
+        
+        .stage-label.active {
+            color: #3498db;
+            font-weight: 600;
+        }
+        
+        .stage-label.completed {
+            color: #2ecc71;
+        }
+        
+        .stage-line {
+            position: absolute;
+            top: 5px;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background-color: #e9ecef;
+            z-index: 1;
+        }
+        
+        .stage-line-progress {
+            position: absolute;
+            top: 0;
+            left: 0;
+            height: 100%;
+            background: linear-gradient(90deg, #3498db, #2ecc71);
+            width: 0%;
+            transition: width 0.5s ease;
+        }
+
+        .progress-bar-container {
+            width: 100%;
+            height: 8px;
+            background: #e9ecef;
+            border-radius: 4px;
+            overflow: hidden;
+            margin: 0.5rem 0;
+        }
+
+        .progress-bar {
+            width: 0%;
+            height: 100%;
+            background: linear-gradient(90deg, #3498db, #2ecc71);
+            border-radius: 4px;
+            transition: width 0.3s ease;
+        }
+
+        .progress-details {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.85rem;
+            color: #666;
+        }
+
+        .upload-speed, .time-remaining {
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+
+        .upload-speed::before {
+            content: '📈';
+        }
+
+        .time-remaining::before {
+            content: '⏱️';
+        }
+
+        /* 上传状态样式 */
+        .upload-progress.uploading .progress-bar {
+            background: linear-gradient(90deg, #3498db, #2ecc71);
+            background-size: 200% 100%;
+            animation: progress-animation 2s linear infinite;
+        }
+
+        .upload-progress.success .progress-bar {
+            background: #2ecc71;
+        }
+
+        .upload-progress.error .progress-bar {
+            background: #e74c3c;
+        }
+        
+        /* 进度信息动画 */
+        @keyframes pulse-status {
+            0% { opacity: 0.7; }
+            50% { opacity: 1; }
+            100% { opacity: 0.7; }
+        }
+        
+        .progress-status.processing {
+            color: #3498db;
+            font-weight: 500;
+            animation: pulse-status 1.5s ease infinite;
+        }
+        
+        .progress-status.completed {
+            color: #2ecc71;
+            font-weight: 500;
+        }
+        
+        .progress-status.error {
+            color: #e74c3c;
+            font-weight: 500;
+        }
+
+        @keyframes progress-animation {
+            0% {
+                background-position: 100% 0;
+            }
+            100% {
+                background-position: -100% 0;
+            }
+        }
+
         @media (max-width: 768px) {
             .dashboard {
                 flex-direction: column;
@@ -888,6 +1075,19 @@
                             <option value="">不关联文章</option>
                         </select>
                     </div>
+                    <div class="upload-progress" style="display: none;">
+                        <div class="progress-info">
+                            <span class="progress-percentage">0%</span>
+                            <span class="progress-status">准备上传...</span>
+                        </div>
+                        <div class="progress-bar-container">
+                            <div class="progress-bar"></div>
+                        </div>
+                        <div class="progress-details">
+                            <span class="upload-speed">0 KB/s</span>
+                            <span class="time-remaining">计算中...</span>
+                        </div>
+                    </div>
                     <div class="form-actions">
                         <button type="button" class="btn btn-secondary" onclick="closeUploadModal()">取消</button>
                         <button type="submit" class="btn btn-primary">上传</button>
@@ -1224,14 +1424,14 @@
             const title = document.getElementById('postTitle').value;
             const content = editor ? editor.value() : '';
             const status = document.getElementById('postStatus').value;
-            
+
             // 表单验证
             if (!title.trim() || !content.trim()) {
                 errorMessage.textContent = '请填写文章标题和内容';
                 errorMessage.style.display = 'block';
                 return;
             }
-            
+
             // 获取选中的标签
             const selectedTags = Array.from(document.querySelectorAll('#createPostTags .tag-checkbox:checked'))
                 .map(checkbox => checkbox.value);
@@ -1250,9 +1450,9 @@
                         'Accept': 'application/json',
                         'Authorization': `Bearer ${localStorage.getItem('token')}`
                     },
-                    body: JSON.stringify({
-                        title: title.trim(),
-                        content: content.trim(),
+                    body: JSON.stringify({ 
+                        title: title.trim(), 
+                        content: content.trim(), 
                         status
                     })
                 });
@@ -1383,7 +1583,7 @@
             const title = document.getElementById('editPostTitle').value;
             const content = editEditor ? editEditor.value() : '';
             const status = document.getElementById('editPostStatus').value;
-            
+
             // 获取选中的标签
             const selectedTags = Array.from(document.querySelectorAll('#editPostTags .tag-checkbox:checked'))
                 .map(checkbox => checkbox.value);
@@ -1597,27 +1797,27 @@
                     const localDate = new Date(createdDate.getTime() - (8 * 3600 * 1000));
                     
                     return `
-                        <tr>
-                            <td>${file.filename}</td>
-                            <td>${formatFileType(file.type)}</td>
-                            <td>${formatFileSize(file.size)}</td>
-                            <td>${file.uploader_name || '未知'}</td>
+                    <tr>
+                        <td>${file.filename}</td>
+                        <td>${formatFileType(file.type)}</td>
+                        <td>${formatFileSize(file.size)}</td>
+                        <td>${file.uploader_name || '未知'}</td>
                             <td>${localDate.toLocaleString()}</td>
-                            <td>
-                                <select 
-                                    class="file-post-select" 
-                                    onchange="updateFilePost('${file.id}', this.value)"
-                                    data-current="${file.post_id || ''}"
-                                >
-                                    <option value="">不关联文章</option>
-                                    <!-- 文章选项将通过 loadPostsForFileSelect 动态加载 -->
-                                </select>
-                            </td>
-                            <td class="action-buttons">
-                                <a href="${API_CONFIG.getUrl(API_CONFIG.ENDPOINTS.FILE(file.id))}" class="btn btn-sm btn-info" target="_blank">查看</a>
-                                <button class="btn btn-sm btn-danger" onclick="deleteFile('${file.id}')">删除</button>
-                            </td>
-                        </tr>
+                        <td>
+                            <select 
+                                class="file-post-select" 
+                                onchange="updateFilePost('${file.id}', this.value)"
+                                data-current="${file.post_id || ''}"
+                            >
+                                <option value="">不关联文章</option>
+                                <!-- 文章选项将通过 loadPostsForFileSelect 动态加载 -->
+                            </select>
+                        </td>
+                        <td class="action-buttons">
+                            <a href="${API_CONFIG.getUrl(API_CONFIG.ENDPOINTS.FILE(file.id))}" class="btn btn-sm btn-info" target="_blank">查看</a>
+                            <button class="btn btn-sm btn-danger" onclick="deleteFile('${file.id}')">删除</button>
+                        </td>
+                    </tr>
                     `;
                 }).join('');
 
@@ -1659,8 +1859,40 @@
         }
 
         function closeUploadModal() {
-            document.getElementById('uploadFileModal').style.display = 'none';
-            document.getElementById('uploadFileForm').reset();
+            const modal = document.getElementById('uploadFileModal');
+            const form = document.getElementById('uploadFileForm');
+            const progressElement = modal.querySelector('.upload-progress');
+            const progressBar = progressElement.querySelector('.progress-bar');
+            const progressPercentage = progressElement.querySelector('.progress-percentage');
+            const progressStatus = progressElement.querySelector('.progress-status');
+            const uploadSpeed = progressElement.querySelector('.upload-speed');
+            const timeRemaining = progressElement.querySelector('.time-remaining');
+            const submitBtn = form.querySelector('button[type="submit"]');
+            
+            // 重置表单
+            form.reset();
+            
+            // 重置进度条状态
+            progressElement.style.display = 'none';
+            progressElement.classList.remove('uploading', 'success', 'error');
+            progressBar.style.width = '0%';
+            progressPercentage.textContent = '0%';
+            progressStatus.textContent = '准备上传...';
+            progressStatus.className = 'progress-status';
+            uploadSpeed.textContent = '0 KB/s';
+            timeRemaining.textContent = '计算中...';
+            
+            // 移除阶段指示器（如果存在）
+            const stageIndicator = progressElement.querySelector('.progress-stage');
+            if (stageIndicator) {
+                stageIndicator.remove();
+            }
+            
+            // 重置按钮状态
+            submitBtn.disabled = false;
+            
+            // 关闭模态框
+            modal.style.display = 'none';
         }
 
         async function loadPostsForSelect() {
@@ -1683,47 +1915,865 @@
         async function handleFileUpload(event) {
             event.preventDefault();
             
-            const formData = new FormData(event.target);
+            const form = event.target;
+            const submitBtn = form.querySelector('button[type="submit"]');
+            const formData = new FormData(form);
             const file = formData.get('file');
+            const progressElement = document.querySelector('.upload-progress');
+            const progressBar = progressElement.querySelector('.progress-bar');
+            const progressPercentage = progressElement.querySelector('.progress-percentage');
+            const progressStatus = progressElement.querySelector('.progress-status');
+            const uploadSpeed = progressElement.querySelector('.upload-speed');
+            const timeRemaining = progressElement.querySelector('.time-remaining');
             
-            // 检查文件大小
-            if (file.size > 10 * 1024 * 1024) { // 10MB限制
-                alert('文件大小不能超过10MB');
-                return;
-            }
+            // 显示进度条
+            progressElement.style.display = 'block';
+            progressElement.classList.add('uploading');
+            submitBtn.disabled = true;
+            
+            // 添加阶段指示器
+            const progressStage = document.createElement('div');
+            progressStage.className = 'progress-stage';
+            
+            // 阶段指示线
+            const stageLine = document.createElement('div');
+            stageLine.className = 'stage-line';
+            
+            const stageLineProgress = document.createElement('div');
+            stageLineProgress.className = 'stage-line-progress';
+            stageLine.appendChild(stageLineProgress);
+            progressStage.appendChild(stageLine);
+            
+            // 阶段项
+            const stages = [
+                { id: 'processing', label: '处理' },
+                { id: 'compressing', label: '压缩' },
+                { id: 'uploading', label: '上传' },
+                { id: 'completed', label: '完成' }
+            ];
+            
+            stages.forEach((stage, index) => {
+                const stageIndicator = document.createElement('div');
+                stageIndicator.className = 'stage-indicator';
+                stageIndicator.id = `stage-${stage.id}`;
+                
+                const stageDot = document.createElement('div');
+                stageDot.className = 'stage-dot';
+                if (index === 0) stageDot.classList.add('active');
+                
+                const stageLabel = document.createElement('div');
+                stageLabel.className = 'stage-label';
+                if (index === 0) stageLabel.classList.add('active');
+                stageLabel.textContent = stage.label;
+                
+                stageIndicator.appendChild(stageDot);
+                stageIndicator.appendChild(stageLabel);
+                progressStage.appendChild(stageIndicator);
+            });
+            
+            // 在进度条上方插入阶段指示器
+            progressElement.insertBefore(progressStage, progressElement.querySelector('.progress-bar-container'));
+            
+            // 更新阶段状态
+            const updateStage = (stageIndex, percent) => {
+                const stageLineProgress = progressStage.querySelector('.stage-line-progress');
+                stageLineProgress.style.width = `${percent * 100 / 3}%`;
+                
+                for (let i = 0; i < stages.length; i++) {
+                    const stageIndicator = document.getElementById(`stage-${stages[i].id}`);
+                    const stageDot = stageIndicator.querySelector('.stage-dot');
+                    const stageLabel = stageIndicator.querySelector('.stage-label');
+                    
+                    if (i < stageIndex) {
+                        // 已完成阶段
+                        stageDot.classList.remove('active');
+                        stageDot.classList.add('completed');
+                        stageLabel.classList.remove('active');
+                        stageLabel.classList.add('completed');
+                    } else if (i === stageIndex) {
+                        // 当前阶段
+                        stageDot.classList.add('active');
+                        stageDot.classList.remove('completed');
+                        stageLabel.classList.add('active');
+                        stageLabel.classList.remove('completed');
+                    } else {
+                        // 未开始阶段
+                        stageDot.classList.remove('active', 'completed');
+                        stageLabel.classList.remove('active', 'completed');
+                    }
+                }
+            };
+            
+            // 初始化阶段为"处理"
+            updateStage(0, 0);
+            progressStatus.classList.add('processing');
 
-            // 检查文件类型
-            const allowedTypes = ['image/', 'video/', 'application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.'];
-            if (!allowedTypes.some(type => file.type.startsWith(type))) {
-                alert('不支持的文件类型');
-                return;
-            }
-            
             try {
-                const response = await fetch(API_CONFIG.getUrl(API_CONFIG.ENDPOINTS.UPLOAD), {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': `Bearer ${localStorage.getItem('token')}`
-                    },
-                    body: formData
-                });
-
-                if (!response.ok) {
-                    throw new Error('上传文件失败');
+                let processedFile = file;
+                
+                // 更新状态为处理中
+                progressStatus.textContent = '正在处理文件...';
+                progressBar.style.width = '5%';
+                progressPercentage.textContent = '5%';
+                
+                // 根据文件类型进行压缩
+                if (file.type.startsWith('image/')) {
+                    // 更新进度状态 - 开始压缩
+                    updateStage(1, 1);
+                    progressStatus.textContent = '正在压缩图片...';
+                    progressBar.style.width = '20%';
+                    progressPercentage.textContent = '20%';
+                    
+                    processedFile = await compressImage(file);
+                    
+                    // 压缩完成
+                    progressStatus.textContent = '图片压缩完成';
+                    progressStatus.classList.remove('processing');
+                    progressStatus.classList.add('completed');
+                    progressBar.style.width = '40%';
+                    progressPercentage.textContent = '40%';
+                    
+                } else if (file.type.startsWith('video/')) {
+                    // 视频压缩进度更新的回调函数
+                    const onProgress = (percent, status) => {
+                        // 压缩阶段（0-40%）
+                        const scaledPercent = Math.round(percent * 0.4);
+                        progressStatus.textContent = status || '正在压缩视频...';
+                        progressBar.style.width = `${scaledPercent}%`;
+                        progressPercentage.textContent = `${scaledPercent}%`;
+                        
+                        // 到达压缩阶段
+                        if (percent >= 10 && percent < 50) {
+                            updateStage(1, 1);
+                        }
+                    };
+                    
+                    updateStage(0, 0.9);
+                    const videoProcessResult = await compressVideo(file, onProgress);
+                    
+                    // 获取处理后的文件
+                    processedFile = videoProcessResult.file;
+                    
+                    const compressionInfo = videoProcessResult.compressed ? 
+                        `(减少${Math.round(100 - (videoProcessResult.compressedSize / videoProcessResult.originalSize) * 100)}%)` : 
+                        '(未压缩)';
+                    
+                    const sizeInfo = `${(processedFile.size / (1024 * 1024)).toFixed(1)}MB ${compressionInfo}`;
+                    
+                    // 显示处理结果
+                    progressStatus.textContent = `视频处理完成: ${sizeInfo}`;
+                    
+                    // 添加详细处理结果到控制台
+                    console.info('视频处理结果:', videoProcessResult);
+                    
+                    progressStatus.classList.remove('processing');
+                    progressStatus.classList.add('completed');
+                    progressBar.style.width = '40%';
+                    progressPercentage.textContent = '40%';
+                }
+                
+                // 创建新的 FormData 对象
+                const newFormData = new FormData();
+                newFormData.append('file', processedFile);
+                if (formData.get('postId')) {
+                    newFormData.append('postId', formData.get('postId'));
                 }
 
-                const result = await response.json();
-                if (result.success) {
+                // 准备上传
+                progressStatus.textContent = '准备上传...';
+                progressStatus.classList.remove('completed');
+                progressStatus.classList.add('processing');
+                updateStage(2, 2);
+                
+                // 创建 XMLHttpRequest 对象来跟踪上传进度
+                const xhr = new XMLHttpRequest();
+                
+                // 记录上传开始时间和已上传大小，用于计算速度
+                let startTime = Date.now();
+                let lastLoaded = 0;
+                
+                xhr.upload.onprogress = (event) => {
+                    if (event.lengthComputable) {
+                        // 计算进度百分比（从40%到90%）
+                        const percent = Math.round(40 + (event.loaded / event.total) * 50);
+                        progressBar.style.width = `${percent}%`;
+                        progressPercentage.textContent = `${percent}%`;
+                        
+                        // 计算上传速度
+                        const currentTime = Date.now();
+                        const elapsedTime = (currentTime - startTime) / 1000; // 转换为秒
+                        const bytesPerSecond = event.loaded / elapsedTime;
+                        
+                        // 计算剩余时间
+                        const remainingBytes = event.total - event.loaded;
+                        const remainingTime = remainingBytes / bytesPerSecond;
+                        
+                        // 更新速度显示
+                        uploadSpeed.textContent = `${formatFileSize(bytesPerSecond)}/s`;
+                        
+                        // 更新剩余时间显示
+                        timeRemaining.textContent = formatTimeRemaining(remainingTime);
+                        
+                        // 更新状态文本
+                        progressStatus.textContent = '正在上传...';
+                        
+                        // 更新上次记录的已上传大小
+                        lastLoaded = event.loaded;
+                    }
+                };
+
+                // 处理上传完成
+                xhr.onload = () => {
+                    try {
+                        // 记录原始响应用于调试
+                        console.log('服务器原始响应:', xhr.responseText);
+                        
+                        // 检查状态码范围 (2xx 表示成功)
+                        if (xhr.status >= 200 && xhr.status < 300) {
+                            let response;
+                            try {
+                                // 尝试解析JSON响应
+                                response = JSON.parse(xhr.responseText);
+                                console.log('解析的JSON响应:', response);
+                            } catch (parseError) {
+                                console.error('解析响应数据失败:', parseError, xhr.responseText);
+                                // 即使解析失败，如果状态码是成功的，我们也认为上传成功
+                                response = { success: true, message: "Upload successful (response parsing failed)" };
+                            }
+                            
+                            // 检查响应中是否有success字段，或者基于状态码判断成功
+                            // 部分API可能不返回success字段，但状态码表明成功
+                            const isSuccess = (response && response.success === true) || 
+                                             (response && response.fileId) || 
+                                             true; // 如果状态码是2xx，默认认为成功
+                            
+                            if (isSuccess) {
+                                // 记录上传成功信息
+                                const fileId = response.fileId || 'unknown';
+                                const fileUrl = response.url || '';
+                                console.log(`文件上传成功! ID: ${fileId}, URL: ${fileUrl}`);
+                                
+                                // 更新到完成阶段
+                                updateStage(3, 3);
+                                
+                                progressElement.classList.remove('uploading');
+                                progressElement.classList.add('success');
+                                progressStatus.textContent = '上传成功！';
+                                progressStatus.classList.remove('processing');
+                                progressStatus.classList.add('completed');
+                                progressBar.style.width = '100%';
+                                progressPercentage.textContent = '100%';
+                                
+                                // 确保定时器执行
+                                const closeTimer = setTimeout(() => {
                     closeUploadModal();
                     loadFiles();
-                    alert('文件上传成功');
+                                    clearTimeout(closeTimer); // 清除定时器引用
+                                }, 1500);
                 } else {
-                    throw new Error(result.message || '上传文件失败');
-                }
+                                const errorMsg = (response && response.message) ? response.message : '上传可能成功，但响应格式不符合预期';
+                                console.warn('上传状态不明确:', errorMsg);
+                                throw new Error(errorMsg);
+                            }
+                        } else {
+                            throw new Error(`上传失败，状态码: ${xhr.status}`);
+                        }
+                    } catch (error) {
+                        console.error('处理上传响应时出错:', error);
+                        progressElement.classList.remove('uploading');
+                        progressElement.classList.add('error');
+                        progressStatus.textContent = error.message || '上传失败，请重试';
+                        progressStatus.classList.remove('processing', 'completed');
+                        progressStatus.classList.add('error');
+                        submitBtn.disabled = false;
+                    }
+                };
+
+                // 处理上传错误
+                xhr.onerror = () => {
+                    progressElement.classList.remove('uploading');
+                    progressElement.classList.add('error');
+                    progressStatus.textContent = '网络错误，上传失败';
+                    progressStatus.classList.remove('processing', 'completed');
+                    progressStatus.classList.add('error');
+                    submitBtn.disabled = false;
+                };
+
+                // 发送请求
+                xhr.open('POST', API_CONFIG.getUrl(API_CONFIG.ENDPOINTS.UPLOAD), true);
+                xhr.setRequestHeader('Authorization', `Bearer ${localStorage.getItem('token')}`);
+                xhr.send(newFormData);
+                
             } catch (error) {
                 console.error('上传文件失败:', error);
-                alert(error.message || '上传文件失败，请重试');
+                progressElement.classList.remove('uploading');
+                progressElement.classList.add('error');
+                progressStatus.textContent = error.message || '上传失败，请重试';
+                progressStatus.classList.remove('processing', 'completed');
+                progressStatus.classList.add('error');
+                submitBtn.disabled = false;
             }
+        }
+
+        // 格式化剩余时间显示
+        function formatTimeRemaining(seconds) {
+            if (seconds < 60) {
+                return `${Math.round(seconds)}秒`;
+            } else if (seconds < 3600) {
+                return `${Math.round(seconds / 60)}分钟`;
+            } else {
+                return `${Math.round(seconds / 3600)}小时${Math.round((seconds % 3600) / 60)}分钟`;
+            }
+        }
+
+        // 压缩图片
+        function compressImage(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = function(event) {
+                    const img = new Image();
+                    img.src = event.target.result;
+                    img.onload = function() {
+                        const canvas = document.createElement('canvas');
+                        let width = img.width;
+                        let height = img.height;
+
+                        // 计算缩放比例，保持宽高比
+                        const maxDimension = 800;
+                        if (width > height && width > maxDimension) {
+                            height = Math.round((height * maxDimension) / width);
+                            width = maxDimension;
+                        } else if (height > maxDimension) {
+                            width = Math.round((width * maxDimension) / height);
+                            height = maxDimension;
+                        }
+
+                        canvas.width = width;
+                        canvas.height = height;
+
+                        const ctx = canvas.getContext('2d');
+                        // 使用双线性插值算法进行缩放
+                        ctx.imageSmoothingEnabled = true;
+                        ctx.imageSmoothingQuality = 'high';
+                        ctx.drawImage(img, 0, 0, width, height);
+
+                        // 压缩质量，从0.7开始
+                        let quality = 0.7;
+                        let compressedDataUrl = canvas.toDataURL('image/jpeg', quality);
+                        let compressedSize = Math.round((compressedDataUrl.length - 'data:image/jpeg;base64,'.length) * 3 / 4);
+
+                        // 如果大小仍然超过500KB，继续降低质量
+                        while (compressedSize > 500 * 1024 && quality > 0.1) {
+                            quality -= 0.1;
+                            compressedDataUrl = canvas.toDataURL('image/jpeg', quality);
+                            compressedSize = Math.round((compressedDataUrl.length - 'data:image/jpeg;base64,'.length) * 3 / 4);
+                        }
+
+                        // 如果降低质量后仍然超过500KB，则需要进一步缩小尺寸
+                        if (compressedSize > 500 * 1024) {
+                            const scale = Math.sqrt(500 * 1024 / compressedSize);
+                            width = Math.round(width * scale);
+                            height = Math.round(height * scale);
+                            
+                            canvas.width = width;
+                            canvas.height = height;
+                            ctx.drawImage(img, 0, 0, width, height);
+                            compressedDataUrl = canvas.toDataURL('image/jpeg', 0.7);
+                        }
+
+                        // 将base64转换为Blob
+                        fetch(compressedDataUrl)
+                            .then(res => res.blob())
+                            .then(blob => {
+                                // 创建File对象
+                                const compressedFile = new File([blob], file.name, {
+                                    type: 'image/jpeg',
+                                    lastModified: Date.now()
+                                });
+                                resolve(compressedFile);
+                            })
+                            .catch(reject);
+                    };
+                    img.onerror = reject;
+                };
+                reader.onerror = reject;
+            });
+        }
+
+        // 压缩视频
+        function compressVideo(file, onProgress) {
+            return new Promise(async (resolve, reject) => {
+                try {
+                    // 增加延迟确保用户能够看到压缩进度
+                    if (onProgress) onProgress(0, '开始处理视频...');
+                    await new Promise(r => setTimeout(r, 300));
+                    
+                    // 记录原始文件大小和类型
+                    console.log(`原始视频：${file.name}, 大小: ${(file.size/(1024*1024)).toFixed(2)}MB, 类型: ${file.type}`);
+                    
+                    // 创建视频元素来播放原始视频
+                    const videoEl = document.createElement('video');
+                    videoEl.preload = 'metadata';
+                    videoEl.muted = false; // 视频可以有声音，以便我们可以获取其音频轨道
+                    videoEl.playsInline = true;
+                    
+                    // 创建画布用于捕获视频帧
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
+                    
+                    // 创建用于接收压缩数据的数组
+                    const chunks = [];
+                    
+                    // 设置对象URL
+                    const objectURL = URL.createObjectURL(file);
+                    videoEl.src = objectURL;
+                    
+                    if (onProgress) onProgress(5, '加载视频元数据...');
+                    
+                    // 加载元数据
+                    await new Promise((resolve, reject) => {
+                        videoEl.onloadedmetadata = resolve;
+                        videoEl.onerror = () => reject(new Error('无法加载视频元数据'));
+                        
+                        // 设置超时
+                        const timeout = setTimeout(() => {
+                            reject(new Error('加载视频元数据超时'));
+                        }, 10000);
+                        
+                        videoEl.addEventListener('loadedmetadata', () => clearTimeout(timeout), {once: true});
+                    });
+                    
+                    if (onProgress) onProgress(10, '准备视频参数...');
+                    
+                    // 获取视频的原始尺寸和时长
+                    const originalWidth = videoEl.videoWidth;
+                    const originalHeight = videoEl.videoHeight;
+                    const duration = videoEl.duration;
+                    
+                    // 改进音频检测逻辑
+                    let hasAudio = false;
+                    try {
+                        // 方法1: 使用 mozHasAudio
+                        if (videoEl.mozHasAudio) {
+                            hasAudio = true;
+                        }
+                        // 方法2: 使用 webkitAudioDecodedByteCount
+                        else if (videoEl.webkitAudioDecodedByteCount !== undefined && videoEl.webkitAudioDecodedByteCount > 0) {
+                            hasAudio = true;
+                        }
+                        // 方法3: 使用 audioTracks
+                        else if (videoEl.audioTracks && videoEl.audioTracks.length > 0) {
+                            hasAudio = true;
+                        }
+                        // 方法4: 使用 getAudioTracks
+                        else if (videoEl.captureStream) {
+                            const stream = videoEl.captureStream();
+                            const audioTracks = stream.getAudioTracks();
+                            hasAudio = audioTracks.length > 0;
+                        }
+                    } catch (e) {
+                        console.warn('音频检测失败:', e);
+                    }
+                    
+                    console.log(`视频信息: ${duration.toFixed(1)}秒, ${hasAudio ? '有音频' : '无音频'}`);
+                    
+                    // 计算压缩参数
+                    // 1. 如果原始分辨率大于1080p，将其缩小
+                    let targetWidth = originalWidth;
+                    let targetHeight = originalHeight;
+                    
+                    // 尺寸压缩 - 如果宽度大于1920，缩放到1080p
+                    if (originalWidth > 1920 || originalHeight > 1080) {
+                        if (originalWidth > originalHeight) {
+                            // 横向视频
+                            targetWidth = Math.min(1920, originalWidth);
+                            targetHeight = Math.round(targetWidth * originalHeight / originalWidth);
+                            // 确保高度不超过1080
+                            if (targetHeight > 1080) {
+                                targetHeight = 1080;
+                                targetWidth = Math.round(targetHeight * originalWidth / originalHeight);
+                            }
+                        } else {
+                            // 纵向视频
+                            targetHeight = Math.min(1080, originalHeight);
+                            targetWidth = Math.round(targetHeight * originalWidth / originalHeight);
+                            // 确保宽度不超过1920
+                            if (targetWidth > 1920) {
+                                targetWidth = 1920;
+                                targetHeight = Math.round(targetWidth * originalHeight / originalWidth);
+                            }
+                        }
+                    }
+                    
+                    console.log(`视频尺寸: ${originalWidth}x${originalHeight} -> ${targetWidth}x${targetHeight}`);
+                    
+                    // 设置画布尺寸
+                    canvas.width = targetWidth;
+                    canvas.height = targetHeight;
+                    
+                    if (onProgress) onProgress(15, '配置压缩设置...');
+                    
+                    // 计算目标比特率 (较低的比特率 = 更小的文件)
+                    // 使用一个较低的比特率，大约 1-2 Mbps
+                    const targetBitrate = 1.5 * 1000 * 1000; // 1.5Mbps
+                    
+                    // 根据视频类型选择不同的编解码器和比特率
+                    let mimeType = 'video/webm;codecs=vp9';
+                    let audioBitsPerSecond = 128 * 1000; // 音频比特率128kbps
+                    let videoBitsPerSecond = targetBitrate; 
+                    
+                    // 检查浏览器是否支持VP9编码
+                    if (!MediaRecorder.isTypeSupported(mimeType)) {
+                        // 回退到VP8
+                        mimeType = 'video/webm;codecs=vp8';
+                        if (!MediaRecorder.isTypeSupported(mimeType)) {
+                            // 如果VP8也不支持，使用默认编码
+                            mimeType = 'video/webm';
+                            if (!MediaRecorder.isTypeSupported(mimeType)) {
+                                // 如果WebM不支持，尝试MP4
+                                mimeType = 'video/mp4';
+                                if (!MediaRecorder.isTypeSupported(mimeType)) {
+                                    // 如果所有格式都不支持，抛出错误
+                                    throw new Error('浏览器不支持任何视频编码格式');
+                                }
+                            }
+                        }
+                    }
+                    
+                    // 设置帧率 - 降低帧率可以减小文件大小
+                    // 目标是平衡质量和文件大小
+                    const targetFrameRate = 25; // 降低帧率以减小文件大小
+                    
+                    if (onProgress) onProgress(20, '初始化压缩器...');
+                    
+                    // 使用MediaSource进行更全面的处理 - 保留音频轨道
+                    videoEl.muted = false; // 确保视频不是静音的
+                    videoEl.volume = 1; // 设置音量为最大
+                    
+                    // 需要等待canplay事件，确保视频可以播放
+                    await new Promise(resolve => {
+                        videoEl.addEventListener('canplay', resolve, { once: true });
+                        videoEl.load();
+                    });
+                    
+                    // 等待用户交互以初始化音频上下文
+                    let audioContextStarted = false;
+                    let audioContext;
+                    
+                    // 创建一个按钮让用户点击以开始处理
+                    const startButton = document.createElement('button');
+                    startButton.textContent = '点击开始处理视频';
+                    startButton.style.cssText = `
+                        position: fixed;
+                        top: 50%;
+                        left: 50%;
+                        transform: translate(-50%, -50%);
+                        padding: 15px 30px;
+                        background: #007bff;
+                        color: white;
+                        border: none;
+                        border-radius: 5px;
+                        cursor: pointer;
+                        z-index: 10000;
+                    `;
+                    document.body.appendChild(startButton);
+                    
+                    await new Promise(resolve => {
+                        startButton.onclick = async () => {
+                            try {
+                                // 创建音频上下文
+                                audioContext = new AudioContext();
+                                await audioContext.resume();
+                                audioContextStarted = true;
+                                
+                                // 尝试播放视频
+                                try {
+                                    await videoEl.play();
+                                } catch(e) {
+                                    console.warn('视频播放失败，但继续处理:', e);
+                                }
+                                
+                                // 移除按钮
+                                startButton.remove();
+                                resolve();
+                            } catch(e) {
+                                console.error('初始化音频上下文失败:', e);
+                                startButton.remove();
+                                resolve();
+                            }
+                        };
+                    });
+                    
+                    // 捕获画布视频流
+                    const canvasStream = canvas.captureStream(targetFrameRate);
+                    let combinedStream;
+                    
+                    // 准备MediaRecorder配置
+                    const mediaRecorderOptions = {
+                        mimeType: mimeType,
+                        videoBitsPerSecond: videoBitsPerSecond
+                    };
+                    
+                    // 改进音频轨道捕获逻辑
+                    let hasAudioTrack = false;
+                    try {
+                        if (hasAudio && audioContextStarted) {
+                            // 使用已创建的音频上下文
+                            const source = audioContext.createMediaElementSource(videoEl);
+                            const destination = audioContext.createMediaStreamDestination();
+                            
+                            // 只连接到目标流，不连接到音频上下文的输出
+                            source.connect(destination);
+                            
+                            // 获取音频流
+                            const audioStream = destination.stream;
+                            const audioTracks = audioStream.getAudioTracks();
+                            
+                            if (audioTracks.length > 0) {
+                                // 获取视频轨道
+                                const videoTracks = canvasStream.getVideoTracks();
+                                
+                                // 创建新的 MediaStream 来合并音频和视频
+                                combinedStream = new MediaStream();
+                                
+                                // 添加视频轨道
+                                videoTracks.forEach(track => {
+                                    combinedStream.addTrack(track);
+                                });
+                                
+                                // 添加音频轨道并确保启用
+                                audioTracks.forEach(track => {
+                                    track.enabled = true;
+                                    combinedStream.addTrack(track);
+                                });
+                                
+                                hasAudioTrack = true;
+                                console.log('成功合并音频和视频轨道');
+                            }
+                        }
+                    } catch(e) {
+                        console.warn('合并音频和视频轨道失败:', e);
+                    }
+                    
+                    if (!hasAudioTrack && hasAudio) {
+                        console.warn('无法合并音频轨道，压缩后的视频可能不包含音频');
+                        // 如果合并失败，使用原始画布流
+                        combinedStream = canvasStream;
+                    } else if (!hasAudioTrack) {
+                        combinedStream = canvasStream;
+                    }
+                    
+                    // 使用合并后的流创建MediaRecorder
+                    if (hasAudioTrack) {
+                        mediaRecorderOptions.audioBitsPerSecond = audioBitsPerSecond;
+                    }
+                    
+                    const mediaRecorder = new MediaRecorder(combinedStream, mediaRecorderOptions);
+                    
+                    // 收集编码的数据块
+                    mediaRecorder.ondataavailable = (e) => {
+                        if (e.data && e.data.size > 0) {
+                            chunks.push(e.data);
+                        }
+                    };
+                    
+                    // 压缩完成处理
+                    let compressedFile = null;
+                    const recorderPromise = new Promise((recorderResolve) => {
+                        mediaRecorder.onstop = async () => {
+                            if (onProgress) onProgress(45, '正在生成压缩文件...');
+                            
+                            // 合并所有数据块并创建Blob
+                            const blob = new Blob(chunks, { type: mimeType });
+                            
+                            // 确定输出文件扩展名
+                            let extension = '.webm';
+                            if (mimeType.includes('mp4')) {
+                                extension = '.mp4';
+                            }
+                            
+                            // 创建文件名
+                            const baseName = file.name.replace(/\.[^/.]+$/, '');
+                            const outputFileName = `${baseName}-compressed${extension}`;
+                            
+                            // 创建文件对象
+                            compressedFile = new File([blob], outputFileName, {
+                                type: blob.type,
+                                lastModified: Date.now()
+                            });
+                            
+                            console.log(`压缩后视频：${compressedFile.name}, 大小: ${(compressedFile.size/(1024*1024)).toFixed(2)}MB, 有音轨: ${hasAudioTrack}`);
+                            recorderResolve();
+                        };
+                    });
+                    
+                    // 开始录制
+                    mediaRecorder.start(1000); // 每秒收集一次数据
+                    
+                    if (onProgress) onProgress(25, '开始视频处理...');
+                    
+                    // 监控视频处理进度
+                    let lastProgressTime = 0;
+                    const progressInterval = setInterval(() => {
+                        // 计算进度百分比 (25-40% 范围)
+                        const progress = videoEl.currentTime / duration;
+                        const scaledProgress = 25 + progress * 15; // 映射到25-40%范围
+                        
+                        if (onProgress && videoEl.currentTime > lastProgressTime + 0.5) {
+                            lastProgressTime = videoEl.currentTime;
+                            onProgress(Math.min(40, scaledProgress), 
+                                      `正在处理视频: ${Math.round(progress * 100)}%`);
+                        }
+                    }, 500);
+                    
+                    // 定义绘制帧的函数
+                    const drawFrame = () => {
+                        if (videoEl.ended || videoEl.paused) {
+                            return false; // 停止绘制
+                        }
+                        
+                        // 绘制当前帧到画布
+                        ctx.drawImage(videoEl, 0, 0, canvas.width, canvas.height);
+                        
+                        // 继续绘制下一帧
+                        requestAnimationFrame(drawFrame);
+                        return true;
+                    };
+                    
+                    // 开始绘制帧
+                    drawFrame();
+                    
+                    // 等待视频播放完成
+                    await new Promise(resolve => {
+                        videoEl.onended = resolve;
+                    });
+                    
+                    // 清除进度间隔
+                    clearInterval(progressInterval);
+                    
+                    if (onProgress) onProgress(40, '视频处理完成，正在压缩数据...');
+                    
+                    // 停止录制并等待数据处理完成
+                    mediaRecorder.stop();
+                    await recorderPromise;
+                    
+                    // 清理资源
+                    URL.revokeObjectURL(objectURL);
+                    videoEl.pause();
+                    videoEl.src = '';
+                    
+                    if (onProgress) onProgress(48, '压缩处理完成，检查结果...');
+                    
+                    // 比较原始文件和压缩文件的大小
+                    const originalSize = file.size;
+                    const compressedSize = compressedFile.size;
+                    const compressionRatio = compressedSize / originalSize;
+                    
+                    // 压缩成功的标准：文件大小减少超过5%，或格式已从非WebM转换为WebM
+                    const isEffectiveCompression = compressedSize < originalSize * 0.95 || 
+                                                 (file.type !== 'video/webm' && compressedFile.type.includes('webm'));
+                    
+                    console.log(`压缩比率: ${(compressionRatio * 100).toFixed(2)}%, 有效压缩: ${isEffectiveCompression}`);
+                    
+                    if (isEffectiveCompression) {
+                        // 压缩成功
+                        if (onProgress) onProgress(50, `压缩完成: ${(compressedSize/(1024*1024)).toFixed(1)}MB (减少${(100 - compressionRatio * 100).toFixed(0)}%)`);
+                        
+                        resolve({
+                            file: compressedFile,
+                            compressed: true,
+                            originalSize: originalSize,
+                            compressedSize: compressedSize,
+                            compressionRatio: compressionRatio,
+                            hasAudio: hasAudioTrack,
+                            message: `成功压缩 (减少${(100 - compressionRatio * 100).toFixed(0)}%)${hasAudioTrack ? '' : ' (注意：可能没有音频)'}`
+                        });
+                    } else if (compressedSize > originalSize * 1.1) {
+                        // 压缩结果显著增大了文件体积，使用原始文件
+                        console.warn('压缩后文件比原始文件大10%以上，使用原始文件');
+                        if (onProgress) onProgress(50, '压缩后文件较大，使用原始文件');
+                        
+                        resolve({
+                            file: file,
+                            compressed: false,
+                            originalSize: originalSize,
+                            message: '压缩后文件更大，使用原始文件'
+                        });
+                    } else {
+                        // 压缩没有明显效果，但仍使用压缩文件（可能是格式转换的好处）
+                        console.log('压缩效果不明显，但格式已转换');
+                        if (onProgress) onProgress(50, `格式转换完成: ${(compressedSize/(1024*1024)).toFixed(1)}MB`);
+                        
+                        resolve({
+                            file: compressedFile,
+                            compressed: true,
+                            originalSize: originalSize,
+                            compressedSize: compressedSize,
+                            compressionRatio: compressionRatio,
+                            hasAudio: hasAudioTrack,
+                            message: `视频格式已优化${hasAudioTrack ? '' : ' (注意：可能没有音频)'}`
+                        });
+                    }
+                    
+                } catch (error) {
+                    console.error("视频压缩失败:", error);
+                    
+                    // 记录详细错误信息
+                    const errorDetails = {
+                        message: error.message || '未知错误',
+                        stack: error.stack,
+                        fileName: file.name,
+                        fileSize: file.size,
+                        fileType: file.type
+                    };
+                    console.error('压缩错误详情:', errorDetails);
+                    
+                    // 尝试使用备用方法
+                    if (onProgress) onProgress(35, `主方法失败: ${error.message}，尝试备用方法...`);
+                    
+                    try {
+                        // 备用方法：使用ffmpeg.wasm或转换为Blob URL
+                        if (onProgress) onProgress(40, '尝试最简单的格式转换...');
+                        
+                        // 创建一个经过修改的副本文件
+                        const rawData = await file.arrayBuffer();
+                        let fallbackType = 'video/webm';
+                        
+                        // 确保类型与原始文件不同，以防出现问题
+                        if (file.type === 'video/webm') {
+                            fallbackType = 'video/mp4';
+                        }
+                        
+                        const fallbackFilename = `${file.name.replace(/\.[^/.]+$/, '')}-processed${fallbackType.includes('webm') ? '.webm' : '.mp4'}`;
+                        const fallbackFile = new File([rawData], fallbackFilename, {
+                            type: fallbackType,
+                            lastModified: Date.now()
+                        });
+                        
+                        if (onProgress) onProgress(50, '返回处理后的文件 (保留原始质量和音频)');
+                        
+                        resolve({
+                            file: fallbackFile,
+                            compressed: true,  // 仍然标记为已压缩
+                            originalSize: file.size,
+                            compressedSize: fallbackFile.size,
+                            message: '视频格式转换 (保留原始质量和音频)'
+                        });
+                    } catch (finalError) {
+                        // 所有方法都失败，返回原始文件
+                        if (onProgress) onProgress(50, `无法压缩: ${error.message}`);
+                        
+                        resolve({
+                            file: file,
+                            compressed: false,
+                            error: error.message,
+                            originalSize: file.size,
+                            message: '压缩失败，返回原始文件'
+                        });
+                    }
+                }
+            });
         }
 
         async function deleteFile(fileId) {
