@@ -25,6 +25,13 @@ const API_CONFIG = {
         UPLOAD: '/api/upload',
         FILE: (id) => `/api/files/${id}`,
         UPDATE_FILE_POST: (fileId) => `/api/files/${fileId}/post`,
+
+        // 标签相关
+        TAGS: '/api/tags',
+        TAG: (id) => `/api/tags/${id}`,
+        TAG_POSTS: (id) => `/api/tags/${id}/posts`,
+        POST_TAGS: (postId) => `/api/posts/${postId}/tags`,
+        ALL_POST_TAGS: '/api/posts/all-tags'
     },
 
     // 构建完整的 API URL

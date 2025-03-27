@@ -595,6 +595,44 @@
             content: '🔍';
             font-size: 1.1rem;
         }
+
+        /* 添加标签选择器样式 */
+        .tags-select {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            padding: 0.5rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            min-height: 100px;
+            background: #f8f9fa;
+        }
+
+        .tag-checkbox {
+            display: none;
+        }
+
+        .tag-label {
+            display: inline-block;
+            padding: 0.4rem 0.8rem;
+            background: #fff;
+            border: 1px solid #ddd;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+        }
+
+        .tag-checkbox:checked + .tag-label {
+            background: #3498db;
+            color: #fff;
+            border-color: #3498db;
+        }
+
+        .tag-label:hover {
+            border-color: #3498db;
+            transform: translateY(-1px);
+        }
     </style>
     <script src="/js/config.js"></script>
 </head>
@@ -621,6 +659,9 @@
                 </li>
                 <li class="nav-item">
                     <a href="#" class="nav-link" data-section="files">文件管理</a>
+                </li>
+                <li class="nav-item">
+                    <a href="#" class="nav-link" data-section="tags">标签管理</a>
                 </li>
                 <li class="nav-item">
                     <a href="#" class="nav-link" data-section="messages">留言管理</a>
@@ -713,6 +754,29 @@
                 </table>
             </section>
 
+            <section id="tagsSection" class="content-section" style="display: none;">
+                <div class="section-header">
+                    <h2>标签管理</h2>
+                    <button class="btn btn-primary" onclick="openTagModal()">
+                        <i>➕</i> 新建标签
+                    </button>
+                </div>
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>标签名称</th>
+                            <th>文章数量</th>
+                            <th>创建时间</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tagsTableBody">
+                        <!-- 标签列表将通过 JavaScript 动态加载 -->
+                    </tbody>
+                </table>
+            </section>
+
             <section id="messagesSection" class="content-section" style="display: none;">
                 <div class="section-header">
                     <h2>留言管理</h2>
@@ -732,6 +796,7 @@
             </div>
             <form id="createPostForm">
                 <div class="modal-body">
+                    <div class="alert alert-danger" id="createPostError" style="display: none; margin-bottom: 1rem; padding: 0.75rem 1.25rem; color: #721c24; background-color: #f8d7da; border: 1px solid #f5c6cb; border-radius: 0.25rem;"></div>
                     <div class="form-group">
                         <label for="postTitle">标题</label>
                         <input type="text" id="postTitle" name="title" class="form-control" required>
@@ -748,6 +813,12 @@
                             <option value="draft">草稿</option>
                             <option value="published">发布</option>
                         </select>
+                    </div>
+                    <div class="form-group">
+                        <label>标签</label>
+                        <div class="tags-select" id="createPostTags">
+                            <!-- 标签选项将通过 JavaScript 动态加载 -->
+                        </div>
                     </div>
                 </div>
                 <div class="form-actions">
@@ -784,6 +855,12 @@
                             <option value="published">发布</option>
                         </select>
                     </div>
+                    <div class="form-group">
+                        <label>标签</label>
+                        <div class="tags-select" id="editPostTags">
+                            <!-- 标签选项将通过 JavaScript 动态加载 -->
+                        </div>
+                    </div>
                 </div>
                 <div class="form-actions">
                     <button type="button" class="btn btn-secondary" onclick="closeEditPostModal()">取消</button>
@@ -807,7 +884,7 @@
                     </div>
                     <div class="form-group">
                         <label for="postId">关联文章（可选）</label>
-                        <select id="postId" name="postId">
+                        <select id="postId" name="postId" class="form-control">
                             <option value="">不关联文章</option>
                         </select>
                     </div>
@@ -823,6 +900,28 @@
     <div id="imageViewer" class="image-viewer">
         <button class="image-viewer-close" onclick="hideImageViewer()" aria-label="关闭"></button>
         <img src="" alt="查看图片">
+    </div>
+
+    <div id="tagModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="tagModalTitle">新建标签</h2>
+                <span class="close" onclick="closeTagModal()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <form id="tagForm" onsubmit="handleTagSubmit(event)">
+                    <input type="hidden" id="tagId">
+                    <div class="form-group">
+                        <label for="tagName">标签名称</label>
+                        <input type="text" id="tagName" name="name" class="form-control" required>
+                    </div>
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-secondary" onclick="closeTagModal()">取消</button>
+                        <button type="submit" class="btn btn-primary">保存</button>
+                    </div>
+                </form>
+            </div>
+        </div>
     </div>
 
     <script>
@@ -850,17 +949,38 @@
                 const posts = await response.json();
                 const tableBody = document.getElementById('postsTableBody');
                 
+                // 获取所有文章的标签
+                const tagsResponse = await fetch(API_CONFIG.getUrl('/api/posts/all-tags'), {
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    }
+                });
+                const postTags = await tagsResponse.json();
+                
                 tableBody.innerHTML = posts.map(post => {
-                    // 创建新的 Date 对象，使用正确的时间戳（秒转毫秒）
                     const createdDate = new Date(post.created_at * 1000);
                     const updatedDate = new Date(post.updated_at * 1000);
-                    // 减去8小时的毫秒数 (8 * 60 * 60 * 1000)
                     const localCreatedDate = new Date(createdDate.getTime() - (8 * 3600 * 1000));
                     const localUpdatedDate = new Date(updatedDate.getTime() - (8 * 3600 * 1000));
                     
+                    // 获取文章的标签
+                    const tags = postTags[post.id] || [];
+                    const tagsHtml = tags.length > 0 
+                        ? `<span class="post-tags" style="display: inline-block; margin-left: 10px;">
+                            ${tags.map(tag => 
+                                `<span class="tag-label" style="font-size: 0.85em; padding: 2px 8px; background: rgba(52, 152, 219, 0.1); color: #3498db; border-radius: 12px; margin-right: 5px;">${tag.name}</span>`
+                            ).join('')}
+                           </span>` 
+                        : '';
+                    
                     return `
                         <tr>
-                            <td>${post.title}</td>
+                            <td>
+                                <div style="display: flex; align-items: center;">
+                                    <span>${post.title}</span>
+                                    ${tagsHtml}
+                                </div>
+                            </td>
                             <td>${post.author_name}</td>
                             <td>${localCreatedDate.toLocaleString()}</td>
                             <td>${localUpdatedDate.toLocaleString()}</td>
@@ -952,7 +1072,8 @@
                 users: '用户管理',
                 comments: '评论管理',
                 files: '文件管理',
-                messages: '留言管理'
+                messages: '留言管理',
+                tags: '标签管理'
             };
             document.querySelector('.header-title').textContent = titles[sectionId];
 
@@ -978,6 +1099,8 @@
                 loadFiles();
             } else if (sectionId === 'messages') {
                 loadAdminMessages();
+            } else if (sectionId === 'tags') {
+                loadTags();
             }
         }
 
@@ -1034,75 +1157,121 @@
             }
             editor = new SimpleMDE({
                 element: document.getElementById('postContent'),
-                spellChecker: false
+                spellChecker: false,
+                autofocus: true,
+                shortcuts: {
+                    "toggleBold": "Ctrl-B",
+                    "toggleItalic": "Ctrl-I",
+                    "drawLink": "Ctrl-K",
+                    "toggleHeadingSmaller": "Ctrl-H",
+                    "toggleCodeBlock": "Ctrl-Alt-C",
+                    "toggleBlockquote": "Ctrl-Q",
+                    "toggleUnorderedList": "Ctrl-L",
+                    "toggleOrderedList": "Ctrl-Alt-L",
+                    "cleanBlock": "Ctrl-E",
+                    "drawImage": "Ctrl-Alt-I",
+                    "togglePreview": "Ctrl-P",
+                    "toggleSideBySide": "F9",
+                    "toggleFullScreen": "F11"
+                },
+                toolbar: [
+                    "bold", "italic", "heading", "|",
+                    "quote", "code", "unordered-list", "ordered-list", "|",
+                    "link", "image", "|",
+                    "preview", "side-by-side", "fullscreen", "|",
+                    "guide"
+                ],
+                status: ["autosave", "lines", "words", "cursor"]
             });
+            loadTagsSelect('createPostTags');
         }
 
         // 处理创建文章
         async function handleCreatePost(event) {
             event.preventDefault();
             
+            const form = event.target;
+            const submitBtn = form.querySelector('button[type="submit"]');
+            const errorMessage = document.getElementById('createPostError');
             const title = document.getElementById('postTitle').value;
             const content = editor ? editor.value() : '';
             const status = document.getElementById('postStatus').value;
-
-            // 手动验证表单
-            if (!title.trim()) {
-                alert('请输入文章标题');
+            
+            // 表单验证
+            if (!title.trim() || !content.trim()) {
+                errorMessage.textContent = '请填写文章标题和内容';
+                errorMessage.style.display = 'block';
                 return;
             }
+            
+            // 获取选中的标签
+            const selectedTags = Array.from(document.querySelectorAll('#createPostTags .tag-checkbox:checked'))
+                .map(checkbox => checkbox.value);
 
-            if (!content.trim()) {
-                alert('请输入文章内容');
-                return;
-            }
-
-            // 获取当前时间戳（秒）
-            const now = Math.floor(Date.now() / 1000);
+            // 添加加载状态
+            submitBtn.disabled = true;
+            submitBtn.textContent = '发布中...';
+            errorMessage.style.display = 'none';
 
             try {
-                const requestUrl = API_CONFIG.getUrl(API_CONFIG.ENDPOINTS.POSTS);
-                const token = localStorage.getItem('token');
-                if (!token) {
-                    throw new Error('未找到认证令牌');
-                }
-
-                const response = await fetch(requestUrl, {
+                // 第一步：创建文章
+                const createResponse = await fetch(API_CONFIG.getUrl(API_CONFIG.ENDPOINTS.POSTS), {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
+                        'Accept': 'application/json',
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`
                     },
-                    body: JSON.stringify({ 
-                        title: title.trim(), 
-                        content: content.trim(), 
-                        status,
-                        created_at: now,
-                        updated_at: now
+                    body: JSON.stringify({
+                        title: title.trim(),
+                        content: content.trim(),
+                        status
                     })
                 });
 
-                // 打印响应状态
-                console.log('响应状态:', response.status);
+                const createData = await createResponse.json();
 
-                // 获取响应内容
-                const responseData = await response.json();
-                console.log('响应数据:', responseData);
-
-                if (!response.ok) {
-                    throw new Error(responseData.message || '创建文章失败');
+                if (!createResponse.ok || !createData.success) {
+                    throw new Error(createData.message || '创建文章失败');
                 }
 
-                alert('文章创建成功');
+                // 确保我们有文章ID
+                const postId = createData.post?.id;
+                if (!postId) {
+                    throw new Error('创建文章成功但未返回文章ID');
+                }
+
+                // 第二步：如果有选择标签，更新文章的标签
+                if (selectedTags.length > 0) {
+                    const tagResponse = await fetch(API_CONFIG.getUrl(`/api/posts/${postId}/tags`), {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json',
+                            'Authorization': `Bearer ${localStorage.getItem('token')}`
+                        },
+                        body: JSON.stringify({
+                            tagIds: selectedTags
+                        })
+                    });
+
+                    if (!tagResponse.ok) {
+                        const tagError = await tagResponse.json();
+                        throw new Error(tagError.message || '更新文章标签失败');
+                    }
+                }
+
+                // 成功后关闭模态框并刷新文章列表
                 closeCreatePostModal();
                 loadPosts();
+                alert('文章发布成功！');
             } catch (error) {
-                console.error('创建文章失败:', error);
-                if (error.name === 'TypeError') {
-                    alert('网络错误或API地址无效，请检查网络连接');
-                } else {
-                    alert(`创建文章失败: ${error.message}`);
-                }
+                console.error('发布文章失败:', error);
+                errorMessage.textContent = error.message || '发布失败，请重试';
+                errorMessage.style.display = 'block';
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = '发布';
             }
         }
 
@@ -1121,20 +1290,57 @@
 
                 const post = await response.json();
                 
+                // 获取文章的标签
+                const tagsResponse = await fetch(API_CONFIG.getUrl(`/api/posts/${postId}/tags`));
+                const tags = await tagsResponse.json();
+                
+                // 先设置其他表单字段
                 document.getElementById('editPostId').value = post.id;
                 document.getElementById('editPostTitle').value = post.title;
                 document.getElementById('editPostStatus').value = post.status;
+                document.getElementById('editPostContent').value = post.content;
 
+                // 显示模态窗口
+                document.getElementById('editPostModal').style.display = 'block';
+
+                // 销毁现有编辑器
                 if (editEditor) {
                     editEditor.toTextArea();
                 }
+
+                // 初始化编辑器并设置内容
                 editEditor = new SimpleMDE({
                     element: document.getElementById('editPostContent'),
-                    spellChecker: false
+                    spellChecker: false,
+                    initialValue: post.content,
+                    autofocus: true,
+                    shortcuts: {
+                        "toggleBold": "Ctrl-B",
+                        "toggleItalic": "Ctrl-I",
+                        "drawLink": "Ctrl-K",
+                        "toggleHeadingSmaller": "Ctrl-H",
+                        "toggleCodeBlock": "Ctrl-Alt-C",
+                        "toggleBlockquote": "Ctrl-Q",
+                        "toggleUnorderedList": "Ctrl-L",
+                        "toggleOrderedList": "Ctrl-Alt-L",
+                        "cleanBlock": "Ctrl-E",
+                        "drawImage": "Ctrl-Alt-I",
+                        "togglePreview": "Ctrl-P",
+                        "toggleSideBySide": "F9",
+                        "toggleFullScreen": "F11"
+                    },
+                    toolbar: [
+                        "bold", "italic", "heading", "|",
+                        "quote", "code", "unordered-list", "ordered-list", "|",
+                        "link", "image", "|",
+                        "preview", "side-by-side", "fullscreen", "|",
+                        "guide"
+                    ],
+                    status: ["autosave", "lines", "words", "cursor"]
                 });
-                editEditor.value(post.content);
                 
-                document.getElementById('editPostModal').style.display = 'block';
+                // 加载标签选择器并设置已选中的标签
+                await loadTagsSelect('editPostTags', tags);
             } catch (error) {
                 console.error('加载文章详情失败:', error);
                 alert('加载文章详情失败，请重试');
@@ -1149,22 +1355,20 @@
             const title = document.getElementById('editPostTitle').value;
             const content = editEditor ? editEditor.value() : '';
             const status = document.getElementById('editPostStatus').value;
+            
+            // 获取选中的标签
+            const selectedTags = Array.from(document.querySelectorAll('#editPostTags .tag-checkbox:checked'))
+                .map(checkbox => checkbox.value);
 
-            // 手动验证表单
-            if (!title.trim()) {
-                alert('请输入文章标题');
+            if (!title.trim() || !content.trim()) {
+                alert('请填写文章标题和内容');
                 return;
             }
 
-            if (!content.trim()) {
-                alert('请输入文章内容');
-                return;
-            }
-
-            // 获取当前时间戳（秒）
             const now = Math.floor(Date.now() / 1000);
 
             try {
+                // 首先更新文章内容
                 const response = await fetch(API_CONFIG.getUrl(API_CONFIG.ENDPOINTS.POST(id)), {
                     method: 'PUT',
                     headers: {
@@ -1182,6 +1386,24 @@
                 if (!response.ok) {
                     const error = await response.json();
                     throw new Error(error.message || '更新文章失败');
+                }
+
+                // 然后更新文章标签
+                const tagsResponse = await fetch(API_CONFIG.getUrl(`/api/posts/${id}/tags`), {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    },
+                    body: JSON.stringify({
+                        tagIds: selectedTags
+                    })
+                });
+
+                if (!tagsResponse.ok) {
+                    const error = await tagsResponse.json();
+                    throw new Error(error.message || '更新文章标签失败');
                 }
 
                 alert('文章更新成功');
@@ -1720,6 +1942,166 @@
         function hideImageViewer() {
             const viewer = document.getElementById('imageViewer');
             viewer.style.display = 'none';
+        }
+
+        // 加载标签列表
+        async function loadTags() {
+            try {
+                const response = await fetch(API_CONFIG.getUrl('/api/tags'), {
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    }
+                });
+                const tags = await response.json();
+                const tableBody = document.getElementById('tagsTableBody');
+                
+                tableBody.innerHTML = tags.map(tag => {
+                    // 创建新的 Date 对象，使用正确的时间戳（秒转毫秒）
+                    const createdDate = new Date(tag.created_at * 1000);
+                    // 减去8小时的毫秒数 (8 * 60 * 60 * 1000)
+                    const localCreatedDate = new Date(createdDate.getTime() - (8 * 3600 * 1000));
+                    
+                    return `
+                        <tr>
+                            <td>${tag.id}</td>
+                            <td>${tag.name}</td>
+                            <td>${tag.post_count}</td>
+                            <td>${localCreatedDate.toLocaleString()}</td>
+                            <td class="action-buttons">
+                                <button class="btn btn-sm btn-warning" onclick="editTag('${tag.id}', '${tag.name}')">编辑</button>
+                                <button class="btn btn-sm btn-danger" onclick="deleteTag('${tag.id}')">删除</button>
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
+            } catch (error) {
+                console.error('加载标签列表失败:', error);
+                alert('加载标签列表失败，请重试');
+            }
+        }
+
+        // 删除标签
+        async function deleteTag(tagId) {
+            if (!confirm('确定要删除这个标签吗？')) {
+                return;
+            }
+
+            try {
+                const response = await fetch(API_CONFIG.getUrl(`/api/tags/${tagId}`), {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error('删除标签失败');
+                }
+
+                loadTags();
+            } catch (error) {
+                console.error('删除标签失败:', error);
+                alert('删除标签失败，请重试');
+            }
+        }
+
+        // 打开标签编辑模态框
+        function openTagModal(isEdit = false) {
+            document.getElementById('tagModal').style.display = 'block';
+            document.getElementById('tagForm').reset();
+            document.getElementById('tagModalTitle').textContent = isEdit ? '编辑标签' : '新建标签';
+        }
+
+        // 关闭标签编辑模态框
+        function closeTagModal() {
+            document.getElementById('tagModal').style.display = 'none';
+            document.getElementById('tagForm').reset();
+            document.getElementById('tagId').value = '';
+        }
+
+        // 编辑标签
+        function editTag(id, name) {
+            document.getElementById('tagId').value = id;
+            document.getElementById('tagName').value = name;
+            document.getElementById('tagModalTitle').textContent = '编辑标签';
+            document.getElementById('tagModal').style.display = 'block';
+        }
+
+        // 处理标签提交
+        async function handleTagSubmit(event) {
+            event.preventDefault();
+            
+            const tagId = document.getElementById('tagId').value;
+            const name = document.getElementById('tagName').value;
+
+            // 手动验证表单
+            if (!name.trim()) {
+                alert('请输入标签名称');
+                return;
+            }
+
+            try {
+                const isEdit = !!tagId;
+                const url = isEdit 
+                    ? API_CONFIG.getUrl(`/api/tags/${tagId}`)
+                    : API_CONFIG.getUrl('/api/tags');
+                
+                const method = isEdit ? 'PUT' : 'POST';
+                const now = Math.floor(Date.now() / 1000);
+                const body = isEdit 
+                    ? { name: name.trim() }
+                    : { 
+                        name: name.trim(), 
+                        created_at: now,
+                        updated_at: now
+                    };
+
+                const response = await fetch(url, {
+                    method: method,
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    },
+                    body: JSON.stringify(body)
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.message || `${isEdit ? '更新' : '创建'}标签失败`);
+                }
+
+                alert(`标签${isEdit ? '更新' : '创建'}成功`);
+                closeTagModal();
+                loadTags();
+            } catch (error) {
+                console.error(`${tagId ? '更新' : '创建'}标签失败:`, error);
+                alert(error.message || `${tagId ? '更新' : '创建'}标签失败，请重试`);
+            }
+        }
+
+        // 加载标签选择器
+        async function loadTagsSelect(containerId, selectedTags = []) {
+            try {
+                const response = await fetch(API_CONFIG.getUrl('/api/tags'));
+                const tags = await response.json();
+                const container = document.getElementById(containerId);
+                
+                container.innerHTML = tags.map(tag => `
+                    <div class="tag-item">
+                        <input type="checkbox" 
+                            id="${containerId}_${tag.id}" 
+                            class="tag-checkbox" 
+                            value="${tag.id}"
+                            ${selectedTags.some(t => t.id === tag.id) ? 'checked' : ''}>
+                        <label class="tag-label" for="${containerId}_${tag.id}">
+                            ${tag.name}
+                        </label>
+                    </div>
+                `).join('');
+            } catch (error) {
+                console.error('加载标签失败:', error);
+                container.innerHTML = '<p class="error">加载标签失败</p>';
+            }
         }
     </script>
 </body>

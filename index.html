@@ -113,6 +113,56 @@
             }
         }
 
+        /* 标签区域样式 */
+        .tags-section {
+            margin-bottom: 0;
+            animation: fadeIn 0.5s ease;
+            padding: 1rem;
+        }
+
+        .tags-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            padding: 1.5rem;
+            background: #fff;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        }
+
+        .tag-item {
+            padding: 0.5rem 1rem;
+            background: #f8f9fa;
+            border-radius: 20px;
+            color: #3498db;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 1px solid rgba(52, 152, 219, 0.2);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .tag-item:hover {
+            background: #3498db;
+            color: #fff;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(52, 152, 219, 0.2);
+        }
+
+        .tag-item.active {
+            background: #3498db;
+            color: #fff;
+        }
+
+        .tag-count {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 0.1rem 0.5rem;
+            border-radius: 10px;
+            font-size: 0.8rem;
+        }
+
         /* 文章卡片加载动画 */
         .post-card {
             animation: fadeIn 0.5s ease;
@@ -205,6 +255,27 @@
             line-height: 1.6;
             font-size: 0.95rem;
             flex: 1;
+        }
+
+        .post-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .post-tag {
+            font-size: 0.8rem;
+            padding: 0.2rem 0.8rem;
+            background: rgba(52, 152, 219, 0.1);
+            color: #3498db;
+            border-radius: 12px;
+            transition: all 0.3s ease;
+        }
+
+        .post-tag:hover {
+            background: #3498db;
+            color: #fff;
         }
 
         /* Markdown 预览样式 */
@@ -304,6 +375,19 @@
                 margin-bottom: 1.25rem;
                 -webkit-line-clamp: 2;
             }
+
+            .tags-section {
+                padding: 1rem 0.5rem;
+            }
+
+            .tags-container {
+                padding: 1rem;
+            }
+
+            .tag-item {
+                padding: 0.4rem 0.8rem;
+                font-size: 0.85rem;
+            }
         }
 
         @media (max-width: 480px) {
@@ -334,6 +418,19 @@
                 gap: 0.75rem;
                 font-size: 0.8rem;
             }
+
+            .tags-section {
+                padding: 0.75rem 0.5rem;
+            }
+
+            .tags-container {
+                padding: 0.75rem;
+            }
+
+            .tag-item {
+                padding: 0.3rem 0.7rem;
+                font-size: 0.8rem;
+            }
         }
     </style>
     <script src="/js/config.js"></script>
@@ -361,6 +458,14 @@
     </nav>
 
     <main class="main-content">
+        <section class="tags-section" id="tagsSection" style="display: none;">
+            <div class="tags-container" id="tagsContainer">
+                <div class="loading-container">
+                    <div class="loading-spinner"></div>
+                </div>
+            </div>
+        </section>
+
         <div class="posts-container" id="postsContainer">
             <div class="loading-container" id="loadingContainer">
                 <div class="loading-spinner"></div>
@@ -386,30 +491,18 @@
 
         // 处理 Markdown 预览文本
         function createExcerpt(content, maxLength = 150) {
-            // 移除图片标记
             content = content.replace(/!\[.*?\]\(.*?\)/g, '');
-            
-            // 移除代码块
             content = content.replace(/```[\s\S]*?```/g, '');
-            
-            // 移除内联代码
             content = content.replace(/`.*?`/g, '');
-            
-            // 移除 URL
             content = content.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '$1');
-            
-            // 移除多余的空行
             content = content.replace(/\n\s*\n/g, '\n');
             
-            // 转换 Markdown 为 HTML
             let html = marked.parse(content);
             
-            // 提取纯文本
             const tempDiv = document.createElement('div');
             tempDiv.innerHTML = html;
             let text = tempDiv.textContent || tempDiv.innerText;
             
-            // 截取指定长度
             text = text.trim();
             if (text.length > maxLength) {
                 text = text.substring(0, maxLength) + '...';
@@ -417,6 +510,58 @@
             
             return text;
         }
+
+        // 加载标签
+        async function loadTags() {
+            const tagsSection = document.getElementById('tagsSection');
+            const tagsContainer = document.getElementById('tagsContainer');
+            
+            try {
+                const response = await fetch(API_CONFIG.getUrl('/api/tags'));
+                const tags = await response.json();
+                
+                if (tags.length > 0) {
+                    tagsSection.style.display = 'block';
+                    tagsContainer.innerHTML = `
+                        <div class="tag-item" data-id="all" onclick="filterPostsByTag('all')">
+                            全部
+                            <span class="tag-count">0</span>
+                        </div>
+                        ${tags.map(tag => `
+                            <div class="tag-item" data-id="${tag.id}" onclick="filterPostsByTag('${tag.id}')">
+                                ${tag.name}
+                                <span class="tag-count">${tag.post_count}</span>
+                            </div>
+                        `).join('')}
+                    `;
+                }
+            } catch (error) {
+                console.error('加载标签失败:', error);
+                tagsContainer.innerHTML = `
+                    <div class="error-message">
+                        <p>加载标签失败，请稍后重试</p>
+                    </div>
+                    <button class="reload-btn" onclick="handleTagsReload(this)">重新加载</button>
+                `;
+            }
+        }
+
+        // 处理标签重新加载
+        async function handleTagsReload(button) {
+            button.classList.add('loading');
+            button.textContent = '加载中...';
+            
+            try {
+                await loadTags();
+            } catch (error) {
+                console.error('重新加载标签失败:', error);
+                button.classList.remove('loading');
+                button.textContent = '重新加载';
+            }
+        }
+
+        let currentPosts = [];
+        let selectedTagId = 'all';
 
         // 加载文章列表
         async function loadPosts() {
@@ -427,25 +572,89 @@
                 const response = await fetch(API_CONFIG.getUrl(API_CONFIG.ENDPOINTS.POSTS));
                 const posts = await response.json();
                 
-                // 清除加载动画
+                // 先保存文章数据
+                currentPosts = posts.map(post => ({
+                    ...post,
+                    tags: [] // 初始化空标签数组
+                }));
+
+                // 移除加载动画
                 loadingContainer.remove();
 
-                // 使用 DocumentFragment 优化性能
-                const fragment = document.createDocumentFragment();
+                // 先显示文章
+                displayFilteredPosts();
 
-                posts.forEach(post => {
+                // 然后加载标签
+                try {
+                    const tagsResponse = await fetch(API_CONFIG.getUrl('/api/posts/all-tags'));
+                    const postTags = await tagsResponse.json();
+                    
+                    // 更新文章的标签信息
+                    currentPosts = currentPosts.map(post => ({
+                        ...post,
+                        tags: postTags[post.id] || []
+                    }));
+
+                    // 重新显示带有标签的文章
+                    displayFilteredPosts();
+                } catch (error) {
+                    console.error('加载文章标签失败:', error);
+                    // 即使标签加载失败，文章内容依然保持显示
+                }
+
+            } catch (error) {
+                console.error('加载文章失败:', error);
+                loadingContainer.innerHTML = `
+                    <div class="error-message">
+                        <p>加载失败，请稍后重试</p>
+                    </div>
+                    <button class="reload-btn" onclick="handleReload(this)">重新加载</button>
+                `;
+            }
+        }
+
+        // 显示过滤后的文章
+        function displayFilteredPosts() {
+            const postsContainer = document.getElementById('postsContainer');
+            const filteredPosts = selectedTagId === 'all' 
+                ? currentPosts 
+                : currentPosts.filter(post => post.tags.some(tag => tag.id === selectedTagId));
+
+            // 更新标签计数（如果全部标签元素存在）
+            const allTagCount = document.querySelector(`.tag-item[data-id="all"] .tag-count`);
+            if (allTagCount) {
+                allTagCount.textContent = currentPosts.length;
+            }
+
+            // 创建文档片段
+            const fragment = document.createDocumentFragment();
+
+            // 检查是否有文章
+            if (filteredPosts.length === 0) {
+                const noContentDiv = document.createElement('div');
+                noContentDiv.className = 'error-message';
+                noContentDiv.innerHTML = '<p>暂无相关文章</p>';
+                fragment.appendChild(noContentDiv);
+            } else {
+                filteredPosts.forEach(post => {
                     const postElement = document.createElement('article');
                     postElement.className = 'post-card';
                     postElement.onclick = () => window.location.href = `/post.html?id=${post.id}`;
                     
                     const createdDate = new Date(post.created_at * 1000);
-                    // 减去8小时的毫秒数 (8 * 60 * 60 * 1000)
                     const localDate = new Date(createdDate.getTime() - (8 * 3600 * 1000));
                     const excerpt = createExcerpt(post.content);
                     
                     postElement.innerHTML = `
                         <div class="post-content">
                             <h2 class="post-title">${post.title}</h2>
+                            ${post.tags && post.tags.length > 0 ? `
+                                <div class="post-tags">
+                                    ${post.tags.map(tag => `
+                                        <span class="post-tag">${tag.name}</span>
+                                    `).join('')}
+                                </div>
+                            ` : ''}
                             <p class="post-excerpt">${excerpt}</p>
                             <div class="post-meta">
                                 <div class="post-author">
@@ -459,17 +668,22 @@
                     `;
                     fragment.appendChild(postElement);
                 });
-
-                postsContainer.appendChild(fragment);
-            } catch (error) {
-                console.error('加载文章失败:', error);
-                loadingContainer.innerHTML = `
-                    <div class="error-message">
-                        <p>加载失败，请稍后重试</p>
-                    </div>
-                    <button class="reload-btn" onclick="handleReload(this)">重新加载</button>
-                `;
             }
+
+            // 清空容器并添加新内容
+            postsContainer.innerHTML = '';
+            postsContainer.appendChild(fragment);
+
+            // 更新标签的激活状态
+            document.querySelectorAll('.tag-item').forEach(tag => {
+                tag.classList.toggle('active', tag.dataset.id === selectedTagId);
+            });
+        }
+
+        // 根据标签筛选文章
+        function filterPostsByTag(tagId) {
+            selectedTagId = tagId;
+            displayFilteredPosts();
         }
 
         // 处理重新加载
@@ -496,6 +710,7 @@
         // 页面加载完成后执行
         document.addEventListener('DOMContentLoaded', () => {
             checkAuthStatus();
+            loadTags();
             loadPosts();
 
             // 监听窗口大小变化
