@@ -565,6 +565,24 @@
                 margin: 0.5rem 0;
             }
         }
+
+        /* 视频信息样式 */
+        .video-info {
+            position: absolute;
+            bottom: 0;
+            right: 0;
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 5px 10px;
+            border-radius: 4px;
+            margin: 10px;
+            font-size: 14px;
+        }
+
+        .video-duration {
+            display: inline-block;
+            vertical-align: middle;
+        }
     </style>
 </head>
 <body>
@@ -614,6 +632,9 @@
                     <video class="video-player" id="videoPlayer" controls>
                         您的浏览器不支持 HTML5 视频播放器
                     </video>
+                    <div class="video-info" id="videoInfo" style="display: none;">
+                        <span class="video-duration">总时长: <span id="videoDuration">0:00</span></span>
+                    </div>
                 </div>
             </section>
 
@@ -856,6 +877,19 @@
                         
                         // 显示视频区域
                         videoSection.style.display = 'block';
+
+                        // 显示视频时长
+                        if (videoFile.duration_formatted) {
+                            document.getElementById('videoDuration').textContent = videoFile.duration_formatted;
+                            document.getElementById('videoInfo').style.display = 'block';
+                        } else if (videoFile.duration) {
+                            // 如果没有格式化的时长，自己格式化
+                            const minutes = Math.floor(videoFile.duration / 60);
+                            const seconds = Math.floor(videoFile.duration % 60);
+                            const formattedDuration = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+                            document.getElementById('videoDuration').textContent = formattedDuration;
+                            document.getElementById('videoInfo').style.display = 'block';
+                        }
                         
                         // 从文件名确定具体的MIME类型
                         const getVideoMimeType = (filename) => {
@@ -893,6 +927,23 @@
                             videoPlayer.playsInline = true;
                             videoPlayer.muted = false;
                             videoPlayer.volume = 1;
+
+                            // 更新视频时长显示的函数
+                            const updateVideoDuration = () => {
+                                const duration = videoPlayer.duration;
+                                // 只在 duration 是有效的数值时更新显示
+                                if (!isNaN(duration) && isFinite(duration) && duration > 0) {
+                                    const minutes = Math.floor(duration / 60);
+                                    const seconds = Math.floor(duration % 60);
+                                    const formattedDuration = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+                                    document.getElementById('videoDuration').textContent = formattedDuration;
+                                    document.getElementById('videoInfo').style.display = 'block';
+                                }
+                            };
+                            
+                            // 添加视频加载完成事件处理
+                            videoPlayer.addEventListener('loadedmetadata', updateVideoDuration);
+                            videoPlayer.addEventListener('durationchange', updateVideoDuration);
                             
                             mediaSource.addEventListener('sourceopen', async () => {
                                 const mimeCodec = 'video/webm; codecs="vp8,opus"';
@@ -984,6 +1035,9 @@
                                     console.error('Streaming failed:', error);
                                     // 回退到直接播放
                                     videoPlayer.src = videoUrl;
+                                    // 确保在回退模式下也能显示时长
+                                    videoPlayer.addEventListener('loadedmetadata', updateVideoDuration);
+                                    videoPlayer.addEventListener('durationchange', updateVideoDuration);
                                 }
                             });
                             

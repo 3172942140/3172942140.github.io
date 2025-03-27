@@ -2017,6 +2017,7 @@
                 progressPercentage.textContent = '5%';
                 
                 // 根据文件类型进行压缩
+                let videoProcessResult = null;
                 if (file.type.startsWith('image/')) {
                     // 更新进度状态 - 开始压缩
                     updateStage(1, 1);
@@ -2049,7 +2050,7 @@
                     };
                     
                     updateStage(0, 0.9);
-                    const videoProcessResult = await compressVideo(file, onProgress);
+                    videoProcessResult = await compressVideo(file, onProgress);
                     
                     // 获取处理后的文件
                     processedFile = videoProcessResult.file;
@@ -2077,6 +2078,10 @@
                 newFormData.append('file', processedFile);
                 if (formData.get('postId')) {
                     newFormData.append('postId', formData.get('postId'));
+                }
+                // 添加视频时长字段
+                if (processedFile.type.startsWith('video/') && videoProcessResult && videoProcessResult.duration) {
+                    newFormData.append('duration', videoProcessResult.duration.toFixed(1));
                 }
 
                 // 准备上传
@@ -2687,6 +2692,7 @@
                             compressedSize: compressedSize,
                             compressionRatio: compressionRatio,
                             hasAudio: hasAudioTrack,
+                            duration: duration,
                             message: `成功压缩 (减少${(100 - compressionRatio * 100).toFixed(0)}%)${hasAudioTrack ? '' : ' (注意：可能没有音频)'}`
                         });
                     } else if (compressedSize > originalSize * 1.1) {
@@ -2698,6 +2704,7 @@
                             file: file,
                             compressed: false,
                             originalSize: originalSize,
+                            duration: duration,
                             message: '压缩后文件更大，使用原始文件'
                         });
                     } else {
@@ -2712,6 +2719,7 @@
                             compressedSize: compressedSize,
                             compressionRatio: compressionRatio,
                             hasAudio: hasAudioTrack,
+                            duration: duration,
                             message: `视频格式已优化${hasAudioTrack ? '' : ' (注意：可能没有音频)'}`
                         });
                     }
@@ -2758,6 +2766,7 @@
                             compressed: true,  // 仍然标记为已压缩
                             originalSize: file.size,
                             compressedSize: fallbackFile.size,
+                            duration: duration,
                             message: '视频格式转换 (保留原始质量和音频)'
                         });
                     } catch (finalError) {
@@ -2769,6 +2778,7 @@
                             compressed: false,
                             error: error.message,
                             originalSize: file.size,
+                            duration: duration,
                             message: '压缩失败，返回原始文件'
                         });
                     }
