@@ -612,6 +612,7 @@
             </button>
             <div class="nav-links">
                 <a href="/">首页</a>
+                <a href="/tools.html" class="active">工具集</a>
                 <a href="/message.html">留言</a>
                 <a href="/about.html">关于</a>
             </div>
@@ -666,7 +667,11 @@
         <section class="comments-section">
             <h2 class="comments-title">评论</h2>
             <div id="commentFormContainer">
-                <form class="comment-form" id="commentForm" onsubmit="handleCommentSubmit(event)">
+                <div id="commentLoginPrompt" style="display: none; text-align: center; margin-bottom: 2rem;">
+                    <p style="color: #666; margin-bottom: 1rem;">登录后参与评论互动</p>
+                    <button class="btn-outline" onclick="window.location.href='/login.html'">去登录</button>
+                </div>
+                <form class="comment-form" id="commentForm" onsubmit="handleCommentSubmit(event)" style="display: none;">
                     <textarea class="comment-input" name="content" placeholder="写下你的评论..." required></textarea>
                     <button type="submit" class="btn btn-primary" id="commentSubmitBtn">发表评论</button>
                 </form>
@@ -684,6 +689,8 @@
         function checkAuthStatus() {
             const token = localStorage.getItem('token');
             const authButtons = document.querySelector('.auth-buttons');
+            const commentForm = document.getElementById('commentForm');
+            const commentLoginPrompt = document.getElementById('commentLoginPrompt');
             
             if (token) {
                 const user = JSON.parse(localStorage.getItem('user'));
@@ -692,6 +699,13 @@
                     <span>${isMobile ? user.name : '欢迎，' + user.name}</span>
                     <button class="btn btn-outline" onclick="logout()">退出</button>
                 `;
+                // 显示评论表单，隐藏登录提示
+                commentForm.style.display = 'block';
+                commentLoginPrompt.style.display = 'none';
+            } else {
+                // 显示登录提示，隐藏评论表单
+                commentForm.style.display = 'none';
+                commentLoginPrompt.style.display = 'block';
             }
         }
 
