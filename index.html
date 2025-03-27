@@ -22,6 +22,8 @@
             align-items: center;
             min-height: 200px;
             width: 100%;
+            flex-direction: column;
+            gap: 1.5rem;
         }
 
         /* 加载动画 */
@@ -37,6 +39,78 @@
         @keyframes spin {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
+        }
+
+        /* 错误提示样式 */
+        .error-message {
+            text-align: center;
+            color: #666;
+            font-size: 1.1rem;
+            margin-bottom: 1.5rem;
+            animation: fadeInUp 0.5s ease;
+        }
+
+        /* 重新加载按钮样式 */
+        .reload-btn {
+            padding: 0.75rem 2rem;
+            background: transparent;
+            border: 2px solid #3498db;
+            color: #3498db;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            transform: translateY(0);
+        }
+
+        .reload-btn:hover {
+            background: #3498db;
+            color: #fff;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(52, 152, 219, 0.2);
+        }
+
+        .reload-btn:active {
+            transform: translateY(0);
+        }
+
+        .reload-btn.loading {
+            pointer-events: none;
+            opacity: 0.8;
+            padding-left: 3rem;
+        }
+
+        .reload-btn.loading::before {
+            content: '';
+            position: absolute;
+            left: 1rem;
+            top: 50%;
+            width: 1.2rem;
+            height: 1.2rem;
+            margin-top: -0.6rem;
+            border: 2px solid;
+            border-top-color: transparent;
+            border-radius: 50%;
+            animation: button-loading 0.8s linear infinite;
+        }
+
+        @keyframes button-loading {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
         /* 文章卡片加载动画 */
@@ -302,8 +376,9 @@
             
             if (token) {
                 const user = JSON.parse(localStorage.getItem('user'));
+                const isMobile = window.innerWidth <= 768;
                 authButtons.innerHTML = `
-                    <span>欢迎，${user.name}</span>
+                    <span>${isMobile ? user.name : '欢迎，' + user.name}</span>
                     <button class="btn btn-outline" onclick="logout()">退出</button>
                 `;
             }
@@ -389,11 +464,25 @@
             } catch (error) {
                 console.error('加载文章失败:', error);
                 loadingContainer.innerHTML = `
-                    <div style="text-align: center; color: #666;">
+                    <div class="error-message">
                         <p>加载失败，请稍后重试</p>
-                        <button class="btn-outline" onclick="loadPosts()">重新加载</button>
                     </div>
+                    <button class="reload-btn" onclick="handleReload(this)">重新加载</button>
                 `;
+            }
+        }
+
+        // 处理重新加载
+        async function handleReload(button) {
+            button.classList.add('loading');
+            button.textContent = '加载中...';
+            
+            try {
+                await loadPosts();
+            } catch (error) {
+                console.error('重新加载失败:', error);
+                button.classList.remove('loading');
+                button.textContent = '重新加载';
             }
         }
 
@@ -409,13 +498,18 @@
             checkAuthStatus();
             loadPosts();
 
+            // 监听窗口大小变化
+            window.addEventListener('resize', () => {
+                checkAuthStatus();
+            });
+
             // 绑定登录按钮事件
-            document.getElementById('loginBtn').addEventListener('click', () => {
+            document.getElementById('loginBtn')?.addEventListener('click', () => {
                 window.location.href = '/login.html';
             });
 
             // 绑定注册按钮事件
-            document.getElementById('registerBtn').addEventListener('click', () => {
+            document.getElementById('registerBtn')?.addEventListener('click', () => {
                 window.location.href = '/register.html';
             });
         });

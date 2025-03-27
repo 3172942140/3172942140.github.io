@@ -335,8 +335,9 @@
             
             if (token) {
                 const user = JSON.parse(localStorage.getItem('user'));
+                const isMobile = window.innerWidth <= 768;
                 authButtons.innerHTML = `
-                    <span>欢迎，${user.name}</span>
+                    <span>${isMobile ? user.name : '欢迎，' + user.name}</span>
                     <button class="btn btn-outline" onclick="logout()">退出</button>
                 `;
             }
@@ -352,6 +353,11 @@
         // 页面加载完成后执行
         document.addEventListener('DOMContentLoaded', () => {
             checkAuthStatus();
+
+            // 监听窗口大小变化
+            window.addEventListener('resize', () => {
+                checkAuthStatus();
+            });
 
             // 绑定登录按钮事件
             document.getElementById('loginBtn')?.addEventListener('click', () => {

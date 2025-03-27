@@ -108,6 +108,8 @@ body {
 .auth-buttons {
     display: flex;
     gap: 1rem;
+    align-items: center;
+    height: 100%;
 }
 
 /* 按钮样式 */
@@ -209,6 +211,18 @@ body {
     background-color: #3498db;
 }
 
+/* 欢迎文本样式 */
+.auth-buttons span {
+    color: #666;
+    font-size: 0.95rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 120px;
+    display: inline-block;
+    vertical-align: middle;
+}
+
 /* 响应式设计 */
 @media (max-width: 768px) {
     .navbar {
@@ -217,12 +231,15 @@ body {
 
     .nav-container {
         padding: 0 1rem;
+        position: relative;
     }
 
     .menu-toggle {
         display: flex;
-        order: 1;
-        margin: auto 0 auto 0;
+        position: absolute;
+        left: 50%;
+        transform: translateX(-50%);
+        margin: 0;
     }
 
     .nav-brand {
@@ -234,6 +251,20 @@ body {
         height: 100%;
         display: flex;
         align-items: center;
+        gap: 0.5rem;
+        margin-left: auto;
+    }
+
+    /* 移动端欢迎文本样式 */
+    .auth-buttons span::before {
+        content: none;
+    }
+
+    .auth-buttons span {
+        display: inline-block;
+        font-size: 0.9rem;
+        max-width: 80px;
+        margin-right: 0.3rem;
     }
 
     .nav-links {
@@ -330,11 +361,6 @@ body {
     body.menu-open {
         overflow: hidden;
     }
-
-    /* 欢迎文本样式 */
-    .auth-buttons span {
-        display: none;
-    }
 }
 
 /* 小屏幕设备优化 */
@@ -349,6 +375,12 @@ body {
 
     .auth-buttons {
         gap: 0.4rem;
+    }
+
+    /* 更小屏幕的欢迎文本样式 */
+    .auth-buttons span {
+        max-width: 60px;
+        font-size: 0.85rem;
     }
 
     .btn-outline, .btn-primary {

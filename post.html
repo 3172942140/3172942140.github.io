@@ -541,35 +541,14 @@
         function checkAuthStatus() {
             const token = localStorage.getItem('token');
             const authButtons = document.querySelector('.auth-buttons');
-            const commentForm = document.getElementById('commentForm');
-            const commentInput = document.querySelector('.comment-input');
-            const commentSubmitBtn = document.getElementById('commentSubmitBtn');
             
             if (token) {
                 const user = JSON.parse(localStorage.getItem('user'));
+                const isMobile = window.innerWidth <= 768;
                 authButtons.innerHTML = `
-                    <span>欢迎，${user.name}</span>
+                    <span>${isMobile ? user.name : '欢迎，' + user.name}</span>
                     <button class="btn btn-outline" onclick="logout()">退出</button>
                 `;
-            } else {
-                authButtons.innerHTML = `
-                    <button class="btn btn-outline" id="loginBtn" onclick="window.location.href='/login.html'">登录</button>
-                    <button class="btn btn-primary" id="registerBtn" onclick="window.location.href='/register.html'">注册</button>
-                `;
-            }
-
-            // 评论区域的状态更新
-            if (token) {
-                commentInput.disabled = false;
-                commentInput.placeholder = "写下你的评论...";
-                commentSubmitBtn.classList.remove('btn-disabled');
-                commentSubmitBtn.disabled = false;
-            } else {
-                commentInput.disabled = true;
-                commentInput.placeholder = "请登录后发表评论";
-                commentSubmitBtn.classList.add('btn-disabled');
-                commentSubmitBtn.disabled = true;
-                commentSubmitBtn.onclick = promptLogin;
             }
         }
 
@@ -777,11 +756,13 @@
                 commentList.innerHTML = comments.map(comment => {
                     // 创建正确的时间对象
                     const createdDate = new Date(comment.created_at * 1000);
+                    // 减去8小时的毫秒数 (8 * 60 * 60 * 1000)
+                    const localDate = new Date(createdDate.getTime() - (8 * 3600 * 1000));
                     
                     return `
                         <li class="comment-item">
                             <div class="comment-meta">
-                                ${comment.author_name} · ${createdDate.toLocaleString()}
+                                ${comment.author_name} · ${localDate.toLocaleString()}
                                 ${(currentUser.id === comment.user_id || currentUser.role === 'admin') ? 
                                     `<button class="delete-comment" onclick="deleteComment('${comment.id}')">删除</button>` : 
                                     ''}
@@ -872,6 +853,21 @@
             }
             checkAuthStatus();
             loadPost();
+
+            // 监听窗口大小变化
+            window.addEventListener('resize', () => {
+                checkAuthStatus();
+            });
+
+            // 绑定登录按钮事件
+            document.getElementById('loginBtn')?.addEventListener('click', () => {
+                window.location.href = '/login.html';
+            });
+
+            // 绑定注册按钮事件
+            document.getElementById('registerBtn')?.addEventListener('click', () => {
+                window.location.href = '/register.html';
+            });
         });
     </script>
 
