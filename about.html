@@ -201,7 +201,7 @@
             }
 
             .about-section::before {
-                height: 150px;
+                height: 120px;
             }
 
             .avatar-container {
@@ -219,9 +219,17 @@
             }
 
             .stats-container {
-                grid-template-columns: 1fr;
+                padding: 1.5rem 1rem;
                 gap: 1rem;
+                margin-top: 2rem;
+            }
+
+            .stat-item {
                 padding: 1rem;
+            }
+
+            .stat-value {
+                font-size: 1.75rem;
             }
 
             .contact-links {
@@ -232,15 +240,28 @@
                 padding: 0.6rem 1rem;
                 font-size: 0.9rem;
             }
+
+            .profile-container {
+                gap: 1.5rem;
+            }
+
+            .contact-section {
+                margin-top: 2rem;
+            }
         }
 
         @media (max-width: 480px) {
             .main-content {
+                margin: 3.5rem auto 1rem;
                 padding: 0.75rem;
             }
 
             .about-section {
                 padding: 1.5rem 1rem;
+            }
+
+            .about-section::before {
+                height: 100px;
             }
 
             .avatar-container {
@@ -250,10 +271,49 @@
 
             .profile-name {
                 font-size: 1.5rem;
+                margin-bottom: 0.25rem;
             }
 
             .profile-title {
                 font-size: 1rem;
+                margin-bottom: 1rem;
+            }
+
+            .profile-bio {
+                font-size: 0.95rem;
+                line-height: 1.6;
+            }
+
+            .profile-container {
+                gap: 1rem;
+            }
+
+            .stats-container {
+                padding: 0.75rem 0.5rem;
+                gap: 0.5rem;
+                margin-top: 1rem;
+            }
+
+            .stat-item {
+                padding: 0.75rem 0.5rem;
+            }
+
+            .stat-value {
+                font-size: 1.5rem;
+                margin-bottom: 0.25rem;
+            }
+
+            .stat-label {
+                font-size: 0.85rem;
+            }
+
+            .contact-section {
+                margin-top: 1rem;
+            }
+
+            .contact-title {
+                font-size: 1.25rem;
+                margin-bottom: 1rem;
             }
 
             .contact-links {
@@ -295,10 +355,10 @@
                     <img src="/images/宇智波pdx.png" alt="宇智波pdx" />
                 </div>
                 <div class="profile-info">
-                    <h1 class="profile-name">宇智波pdx</h1>
+                    <h1 class="profile-name">szhAo</h1>
                     <div class="profile-title">Web Developer & CS2 Player</div>
                     <p class="profile-bio">
-                        热爱编程，热爱游戏。擅长Web开发，对新技术充满好奇。
+                        热爱游戏，对新技术充满好奇。
                         CS2爱好者，游戏时长1700+小时。
                         致力于用代码创造有趣的东西，让生活更加精彩。
                     </p>
