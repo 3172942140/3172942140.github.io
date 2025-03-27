@@ -473,6 +473,46 @@
                 grid-template-columns: 1fr;
             }
         }
+
+        /* 添加图片加载样式 */
+        .post-content img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 8px;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            display: block;
+            margin: 0;
+        }
+
+        .post-content img.loaded {
+            opacity: 1;
+        }
+
+        .image-placeholder {
+            background: #f8f9fa;
+            border-radius: 8px;
+            margin: 0;
+            position: relative;
+            overflow: hidden;
+            transition: height 0.3s ease;
+        }
+
+        .image-placeholder::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+            animation: shimmer 1.5s infinite;
+        }
+
+        @keyframes shimmer {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
     </style>
 </head>
 <body>
@@ -570,22 +610,115 @@
                 // 更新内容
                 document.getElementById('postTitle').textContent = post.title;
                 const createdDate = new Date(post.created_at * 1000);
-                // 减去8小时的毫秒数 (8 * 60 * 60 * 1000)
                 const localDate = new Date(createdDate.getTime() - (8 * 3600 * 1000));
                 document.getElementById('postMeta').textContent = `作者：${post.author_name} · ${localDate.toLocaleString()}`;
                 
                 // 使用 marked 渲染 Markdown
                 const contentHtml = marked.parse(post.content);
-                document.getElementById('postContent').innerHTML = contentHtml;
-
-                // 隐藏加载动画，显示内容
+                const postContent = document.getElementById('postContent');
+                
+                // 先显示内容区域
                 document.getElementById('loadingContainer').style.display = 'none';
                 document.getElementById('postHeader').style.display = 'block';
-                document.getElementById('postContent').style.display = 'block';
+                postContent.style.display = 'block';
+                
+                // 直接设置内容
+                postContent.innerHTML = contentHtml;
+                
+                // 处理所有图片
+                const images = postContent.getElementsByTagName('img');
+                Array.from(images).forEach(img => {
+                    // 保存原始src
+                    const originalSrc = img.getAttribute('src');
+                    
+                    // 创建包装容器来维持位置
+                    const wrapper = document.createElement('div');
+                    wrapper.style.position = 'relative';
+                    wrapper.style.width = '100%';
+                    img.parentNode.insertBefore(wrapper, img);
+                    wrapper.appendChild(img);
+                    
+                    // 创建占位符
+                    const placeholder = document.createElement('div');
+                    placeholder.className = 'image-placeholder';
+                    placeholder.style.width = '100%';
+                    placeholder.style.height = '300px';
+                    
+                    // 将占位符添加到包装容器
+                    wrapper.insertBefore(placeholder, img);
+                    
+                    // 设置图片样式
+                    img.style.opacity = '0';
+                    img.style.position = 'absolute';
+                    img.style.top = '0';
+                    img.style.left = '0';
+                    img.style.width = '100%';
+                    img.style.height = 'auto';
+                    
+                    // 设置图片属性
+                    img.setAttribute('loading', 'lazy');
+                    img.setAttribute('decoding', 'async');
+                    
+                    // 创建新的Image对象预加载
+                    const preloadImg = new Image();
+                    
+                    preloadImg.onload = () => {
+                        // 设置占位符和包装容器高度为实际图片比例
+                        const aspectRatio = preloadImg.naturalHeight / preloadImg.naturalWidth;
+                        const height = wrapper.offsetWidth * aspectRatio;
+                        placeholder.style.height = `${height}px`;
+                        wrapper.style.height = `${height}px`;
+                        
+                        // 显示实际图片
+                        img.src = originalSrc;
+                        img.style.display = 'block';
+                        img.style.opacity = '1';
+                        img.classList.add('loaded');
+                        
+                        // 移除占位符
+                        setTimeout(() => {
+                            placeholder.remove();
+                            // 移除绝对定位，让图片回到正常文档流
+                            img.style.position = 'relative';
+                        }, 300);
+                    };
+                    
+                    preloadImg.onerror = () => {
+                        placeholder.innerHTML = `
+                            <div style="padding: 2rem; text-align: center; color: #666;">
+                                <p>图片加载失败</p>
+                                <button onclick="reloadImage(this)" class="btn-outline" style="margin-top: 1rem;">重新加载</button>
+                            </div>
+                        `;
+                    };
+                    
+                    // 开始加载图片
+                    preloadImg.src = originalSrc;
+                });
+
+                // 初始化图片查看器
+                const viewer = new Viewer(postContent, {
+                    navbar: false,
+                    toolbar: {
+                        zoomIn: true,
+                        zoomOut: true,
+                        oneToOne: true,
+                        reset: true,
+                        prev: true,
+                        next: true,
+                        rotateLeft: true,
+                        rotateRight: true,
+                        flipHorizontal: true,
+                        flipVertical: true,
+                    },
+                    title: false,
+                    transition: true,
+                    loading: true,
+                    loop: false
+                });
 
                 // 重新检查登录状态并更新顶栏
                 checkAuthStatus();
-
                 loadComments();
                 loadPostFiles();
             } catch (error) {
@@ -596,6 +729,49 @@
                         <button class="btn-outline" onclick="loadPost()">重新加载</button>
                     </div>
                 `;
+            }
+        }
+
+        // 重新加载失败的图片
+        function reloadImage(button) {
+            const placeholder = button.closest('.image-placeholder');
+            const wrapper = placeholder.parentNode;
+            const img = wrapper.querySelector('img');
+            
+            if (img) {
+                const currentSrc = img.getAttribute('src');
+                const preloadImg = new Image();
+                
+                preloadImg.onload = () => {
+                    // 更新占位符和包装容器高度
+                    const aspectRatio = preloadImg.naturalHeight / preloadImg.naturalWidth;
+                    const height = wrapper.offsetWidth * aspectRatio;
+                    wrapper.style.height = `${height}px`;
+                    
+                    // 显示图片
+                    img.src = currentSrc;
+                    img.style.display = 'block';
+                    img.style.opacity = '1';
+                    img.classList.add('loaded');
+                    
+                    // 移除占位符
+                    setTimeout(() => {
+                        placeholder.remove();
+                        img.style.position = 'relative';
+                    }, 300);
+                };
+
+                preloadImg.onerror = () => {
+                    placeholder.innerHTML = `
+                        <div style="padding: 2rem; text-align: center; color: #666;">
+                            <p>图片加载失败</p>
+                            <button onclick="reloadImage(this)" class="btn-outline" style="margin-top: 1rem;">重新加载</button>
+                        </div>
+                    `;
+                };
+
+                // 开始重新加载
+                preloadImg.src = currentSrc;
             }
         }
 

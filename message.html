@@ -473,6 +473,7 @@
                 document.getElementById('fileName').textContent = file.name;
                 document.getElementById('fileName').classList.add('show');
 
+                // 使用 FileReader 预览图片
                 const reader = new FileReader();
                 reader.onload = function(e) {
                     const preview = document.getElementById('imagePreview');
@@ -484,47 +485,157 @@
             }
         }
 
+        // 压缩图片
+        function compressImage(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = function(event) {
+                    const img = new Image();
+                    img.src = event.target.result;
+                    img.onload = function() {
+                        const canvas = document.createElement('canvas');
+                        let width = img.width;
+                        let height = img.height;
+
+                        // 计算缩放比例，保持宽高比
+                        // 根据经验，800px的图片在JPEG压缩后通常能达到较小的文件大小
+                        const maxDimension = 800;
+                        if (width > height && width > maxDimension) {
+                            height = Math.round((height * maxDimension) / width);
+                            width = maxDimension;
+                        } else if (height > maxDimension) {
+                            width = Math.round((width * maxDimension) / height);
+                            height = maxDimension;
+                        }
+
+                        canvas.width = width;
+                        canvas.height = height;
+
+                        const ctx = canvas.getContext('2d');
+                        // 使用双线性插值算法进行缩放，可以得到更好的图片质量
+                        ctx.imageSmoothingEnabled = true;
+                        ctx.imageSmoothingQuality = 'high';
+                        ctx.drawImage(img, 0, 0, width, height);
+
+                        // 压缩质量，从0.7开始
+                        let quality = 0.7;
+                        let compressedDataUrl = canvas.toDataURL('image/jpeg', quality);
+                        let compressedSize = Math.round((compressedDataUrl.length - 'data:image/jpeg;base64,'.length) * 3 / 4);
+
+                        // 如果大小仍然超过30KB (30 * 1024)，继续降低质量
+                        while (compressedSize > 30 * 1024 && quality > 0.1) {
+                            quality -= 0.1;
+                            compressedDataUrl = canvas.toDataURL('image/jpeg', quality);
+                            compressedSize = Math.round((compressedDataUrl.length - 'data:image/jpeg;base64,'.length) * 3 / 4);
+                        }
+
+                        // 如果质量压缩到最低仍然超过30KB，尝试进一步缩小尺寸
+                        if (compressedSize > 30 * 1024) {
+                            const scale = Math.sqrt(30 * 1024 / compressedSize); // 计算需要的缩放比例
+                            width = Math.round(width * scale);
+                            height = Math.round(height * scale);
+                            
+                            canvas.width = width;
+                            canvas.height = height;
+                            ctx.imageSmoothingEnabled = true;
+                            ctx.imageSmoothingQuality = 'high';
+                            ctx.drawImage(img, 0, 0, width, height);
+                            
+                            compressedDataUrl = canvas.toDataURL('image/jpeg', 0.7); // 重新使用较高质量
+                        }
+
+                        // 将 base64 转换回 Blob
+                        fetch(compressedDataUrl)
+                            .then(res => res.blob())
+                            .then(blob => {
+                                // 创建新的 File 对象
+                                const compressedFile = new File([blob], file.name, {
+                                    type: 'image/jpeg',
+                                    lastModified: Date.now()
+                                });
+                                resolve(compressedFile);
+                            })
+                            .catch(reject);
+                    };
+                    img.onerror = reject;
+                };
+                reader.onerror = reject;
+            });
+        }
+
         // 加载留言列表
         async function loadMessages() {
+            const messageList = document.getElementById('messageList');
+            
+            // 添加加载动画
+            messageList.innerHTML = `
+                <div class="loading-container">
+                    <div class="loading-spinner"></div>
+                </div>
+            `;
+
             try {
+                // 获取所有留言
                 const response = await fetch(API_CONFIG.getUrl('/api/messages'));
                 const messages = await response.json();
-                const messageList = document.getElementById('messageList');
                 const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
 
-                messageList.innerHTML = messages.map(message => {
+                // 创建一个文档片段来存储所有留言
+                const fragment = document.createDocumentFragment();
+
+                // 为每条留言创建元素
+                for (const message of messages) {
+                    const messageElement = document.createElement('div');
+                    messageElement.className = 'message-item';
+
                     // 创建时间对象并调整时区
                     const timestamp = message.created_at * 1000;
                     const date = new Date(timestamp);
-                    // 减去8小时的毫秒数 (8 * 60 * 60 * 1000)
                     const localDate = new Date(date.getTime() - (8 * 3600 * 1000));
                     const isAdmin = currentUser.role === 'admin';
                     const isAuthor = currentUser.id === message.user_id;
                     const canDelete = isAdmin || isAuthor;
 
-                    return `
-                        <div class="message-item">
-                            <div class="message-header">
-                                <span class="message-author">${message.author_name}</span>
-                                <span class="message-time">${localDate.toLocaleString()}</span>
-                            </div>
-                            <div class="message-content">${message.content}</div>
-                            ${message.image_path ? `
-                                <img src="${API_CONFIG.getUrl(`/api/messages/${message.id}/image`)}" 
-                                     alt="留言图片" 
-                                     class="message-image"
-                                     onclick="showImageViewer(this.src)">
-                            ` : ''}
-                            ${canDelete ? `
-                                <div class="message-actions">
-                                    <button class="delete-btn" onclick="deleteMessage('${message.id}')">删除</button>
-                                </div>
-                            ` : ''}
+                    // 构建留言内容
+                    messageElement.innerHTML = `
+                        <div class="message-header">
+                            <span class="message-author">${message.author_name}</span>
+                            <span class="message-time">${localDate.toLocaleString()}</span>
                         </div>
+                        <div class="message-content">${message.content}</div>
+                        ${message.image_path ? `
+                            <img src="${API_CONFIG.getUrl(`/api/messages/${message.id}/image`)}" 
+                                 alt="留言图片" 
+                                 class="message-image"
+                                 loading="lazy"
+                                 onclick="showImageViewer(this.src)">
+                        ` : ''}
+                        ${canDelete ? `
+                            <div class="message-actions">
+                                <button class="delete-btn" onclick="deleteMessage('${message.id}')">删除</button>
+                            </div>
+                        ` : ''}
                     `;
-                }).join('');
 
-                // 添加图片查看器
+                    // 如果有图片，添加加载完成后的渐入效果
+                    if (message.image_path) {
+                        const img = messageElement.querySelector('.message-image');
+                        img.style.opacity = '0';
+                        img.style.transition = 'opacity 0.3s ease';
+                        img.onload = () => {
+                            img.style.opacity = '1';
+                        };
+                    }
+
+                    fragment.appendChild(messageElement);
+                }
+
+                // 清空加载动画并添加所有留言
+                messageList.innerHTML = '';
+                messageList.appendChild(fragment);
+
+                // 确保图片查看器存在
                 if (!document.getElementById('imageViewer')) {
                     const viewer = document.createElement('div');
                     viewer.id = 'imageViewer';
@@ -535,7 +646,12 @@
                 }
             } catch (error) {
                 console.error('加载留言失败:', error);
-                alert('加载留言失败，请重试');
+                messageList.innerHTML = `
+                    <div class="error-message" style="display: block;">
+                        <p>加载失败，请稍后重试</p>
+                        <button class="reload-btn" onclick="loadMessages()">重新加载</button>
+                    </div>
+                `;
             }
         }
 
@@ -569,6 +685,18 @@
                     errorMessage.style.display = 'block';
                     return;
                 }
+
+                try {
+                    // 压缩图片
+                    const compressedFile = await compressImage(imageFile);
+                    // 替换原始图片
+                    formData.set('image', compressedFile);
+                } catch (error) {
+                    console.error('图片压缩失败:', error);
+                    errorMessage.textContent = '图片处理失败，请重试';
+                    errorMessage.style.display = 'block';
+                    return;
+                }
             }
 
             // 添加加载状态
@@ -590,7 +718,9 @@
                 if (response.ok) {
                     form.reset();
                     document.getElementById('imagePreview').style.display = 'none';
-                    loadMessages();
+                    document.getElementById('fileName').classList.remove('show');
+                    // 重新加载所有留言
+                    await loadMessages();
                 } else {
                     throw new Error(data.message || '发表留言失败');
                 }

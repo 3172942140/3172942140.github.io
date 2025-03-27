@@ -925,17 +925,40 @@
     </div>
 
     <script>
+        // 处理令牌失效
+        function handleTokenExpired(message = '登录已过期，请重新登录') {
+            localStorage.removeItem('adminToken');
+            localStorage.removeItem('user');
+            localStorage.setItem('loginMessage', message);
+            window.location.href = '/admin/login.html';
+        }
+
         // 检查登录状态
         function checkAuth() {
             const token = localStorage.getItem('token');
             const user = JSON.parse(localStorage.getItem('user') || '{}');
             
             if (!token || user.role !== 'admin') {
-                window.location.href = '/admin/login.html';
+                handleTokenExpired('请登录后访问管理页面');
                 return;
             }
 
             document.getElementById('userName').textContent = `管理员：${user.name}`;
+        }
+
+        // 处理API响应
+        async function handleApiResponse(response, errorMessage) {
+            if (response.status === 401) {
+                handleTokenExpired();
+                return null;
+            }
+            
+            if (!response.ok) {
+                const error = await response.json();
+                throw new Error(error.message || errorMessage);
+            }
+            
+            return await response.json();
         }
 
         // 加载文章列表
@@ -946,7 +969,10 @@
                         'Authorization': `Bearer ${localStorage.getItem('token')}`
                     }
                 });
-                const posts = await response.json();
+                
+                const posts = await handleApiResponse(response, '加载文章列表失败');
+                if (!posts) return;
+
                 const tableBody = document.getElementById('postsTableBody');
                 
                 // 获取所有文章的标签
@@ -955,7 +981,9 @@
                         'Authorization': `Bearer ${localStorage.getItem('token')}`
                     }
                 });
-                const postTags = await tagsResponse.json();
+                
+                const postTags = await handleApiResponse(tagsResponse, '加载文章标签失败');
+                if (!postTags) return;
                 
                 tableBody.innerHTML = posts.map(post => {
                     const createdDate = new Date(post.created_at * 1000);
