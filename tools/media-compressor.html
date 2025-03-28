@@ -746,6 +746,17 @@
 
         // 初始化页面
         document.addEventListener('DOMContentLoaded', () => {
+            // 添加汉堡菜单点击事件
+            const menuToggle = document.querySelector('.menu-toggle');
+            const navLinks = document.querySelector('.nav-links');
+            const authButtons = document.querySelector('.auth-buttons');
+            
+            menuToggle.addEventListener('click', () => {
+                menuToggle.classList.toggle('active');
+                navLinks.classList.toggle('active');
+                authButtons.classList.toggle('active');
+            });
+
             setupDragAndDrop();
             setupFileInput();
             checkAuthStatus();
