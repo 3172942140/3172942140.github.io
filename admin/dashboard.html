@@ -1920,16 +1920,6 @@
             const formData = new FormData(form);
             const file = formData.get('file');
 
-            // 检查是否为移动设备
-            const isMobile = window.innerWidth <= 768;
-            
-            // 如果是视频文件且在移动设备上，阻止上传
-            if (isMobile && file.type.startsWith('video/')) {
-                alert('移动设备不支持视频上传，请使用电脑端上传视频。');
-                form.reset();
-                return;
-            }
-
             const progressElement = document.querySelector('.upload-progress');
             const progressBar = progressElement.querySelector('.progress-bar');
             const progressPercentage = progressElement.querySelector('.progress-percentage');
