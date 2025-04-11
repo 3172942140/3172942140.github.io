@@ -18,7 +18,10 @@
             display: flex;
             flex-direction: column;
             height: 100vh;
+            height: calc(var(--vh, 1vh) * 100);
             overflow: hidden; /* 防止整个页面滚动 */
+            position: fixed;
+            width: 100%;
         }
         
         .main-content {
@@ -124,6 +127,9 @@
             background-color: #f9f9f9;
             box-shadow: 0 4px 6px rgba(0,0,0,0.05);
             position: relative;
+            -webkit-overflow-scrolling: touch; /* 增强iOS滚动体验 */
+            max-height: calc(100vh - 120px);
+            max-height: calc((var(--vh, 1vh) * 100) - 120px);
         }
 
         .chat-container-inner {
@@ -143,6 +149,7 @@
             position: sticky;
             bottom: 0;
             z-index: 10;
+            flex-shrink: 0; /* 防止输入框被压缩 */
         }
 
         .message-input {
@@ -409,14 +416,21 @@
                 padding: 0.8rem 1.5rem;
             }
             
-            /* 增加移动端底部空间 */
+            /* 修改移动端底部空间 */
             .message-input-container {
                 padding-bottom: calc(1rem + 10px);
+                position: fixed;
+                bottom: 0;
+                left: 0;
+                right: 0;
             }
             
-            /* iOS Safari兼容性修复 */
+            /* 修改移动端滚动区域 */
             .chat-container {
-                padding-bottom: 80px; /* 为键盘和底部导航提供额外空间 */
+                padding-bottom: 100px; /* 为输入框提供足够空间 */
+                margin-bottom: 60px;
+                max-height: calc(100vh - 170px);
+                max-height: calc((var(--vh, 1vh) * 100) - 170px);
             }
         }
 
@@ -454,7 +468,10 @@
             }
             
             .chat-container {
-                padding-bottom: 100px; /* 小屏幕设备提供更多空间 */
+                padding-bottom: 120px; /* 小屏幕设备提供更多空间 */
+                margin-bottom: 70px;
+                max-height: calc(100vh - 180px);
+                max-height: calc((var(--vh, 1vh) * 100) - 180px);
             }
         }
 
@@ -1133,55 +1150,47 @@
             }
         }
 
-        // 滚动到聊天区域底部
+        // 改进的滚动到底部函数
         function scrollToBottom() {
-            // 分别处理两个容器：外部容器和内部容器
-            const chatContainerOuter = document.querySelector('.chat-container');
-            const chatContainerInner = document.getElementById('chatContainer');
-            
-            if (chatContainerInner) {
-                // 使用多种方法尝试滚动
-                try {
-                    // 确保在DOM完全更新后滚动
-                    setTimeout(() => {
-                        // 方法1：直接设置scrollTop
-                        chatContainerInner.scrollTop = chatContainerInner.scrollHeight;
-                        
-                        // 方法2：使用scrollIntoView滚动最后一个消息
-                        const messages = chatContainerInner.querySelectorAll('.message');
-                        if (messages.length > 0) {
-                            const lastMessage = messages[messages.length - 1];
-                            lastMessage.scrollIntoView({ behavior: 'auto', block: 'end' });
-                        }
-                        
-                        // 方法3：滚动外部容器
-                        if (chatContainerOuter) {
-                            chatContainerOuter.scrollTop = chatContainerOuter.scrollHeight;
-                        }
-                        
-                        console.log('已尝试滚动到底部');
-                    }, 100); // 使用较长的延迟确保DOM更新完成
-                } catch (error) {
-                    console.error('滚动到底部时出错:', error);
-                }
+            const chatContainer = document.querySelector('.chat-container');
+            if (chatContainer) {
+                const scrollHeight = chatContainer.scrollHeight;
+                const height = chatContainer.clientHeight;
+                const maxScrollTop = scrollHeight - height;
+                chatContainer.scrollTop = maxScrollTop > 0 ? maxScrollTop : 0;
                 
-                // 额外的延迟滚动，防止某些情况下的渲染延迟
+                // 第二次尝试，确保真的滚动到底部
                 setTimeout(() => {
-                    chatContainerInner.scrollTop = chatContainerInner.scrollHeight;
-                    
-                    if (chatContainerOuter) {
-                        chatContainerOuter.scrollTop = chatContainerOuter.scrollHeight;
-                    }
-                }, 500);
+                    chatContainer.scrollTop = chatContainer.scrollHeight;
+                }, 50);
             }
         }
-
+        
+        // 修复移动端滚动问题的函数
+        function fixMobileScroll() {
+            const chatContainer = document.querySelector('.chat-container');
+            const messageInputContainer = document.querySelector('.message-input-container');
+            
+            // 调整聊天容器高度
+            if (window.innerWidth <= 768) {
+                const inputHeight = messageInputContainer.offsetHeight;
+                chatContainer.style.paddingBottom = `${inputHeight + 20}px`;
+            } else {
+                chatContainer.style.paddingBottom = ''; // 恢复默认值
+            }
+            
+            // 确保滚动到底部
+            scrollToBottom();
+        }
+        
         // 添加视口高度修复
         function updateVhVariable() {
             // 获取视口的真实高度
             let vh = window.innerHeight * 0.01;
             // 设置自定义属性 --vh
             document.documentElement.style.setProperty('--vh', `${vh}px`);
+            // 修复移动端滚动
+            fixMobileScroll();
         }
         
         // 初始化时调用一次
@@ -1196,21 +1205,58 @@
         const messageInput = document.querySelector('.message-input input');
         
         messageInput.addEventListener('focus', () => {
-            // 聊天输入框获得焦点时，确保滚动到底部
+            // 延迟以等待虚拟键盘完全显示
             setTimeout(() => {
+                updateVhVariable();
                 scrollToBottom();
-            }, 300); // 延迟确保键盘已完全展开
+            }, 300);
+        });
+        
+        messageInput.addEventListener('blur', () => {
+            // 键盘收起时调整视图
+            setTimeout(() => {
+                updateVhVariable();
+                scrollToBottom();
+            }, 300);
         });
         
         // 加载页面完成后初始化
         window.addEventListener('load', () => {
-            // 滚动到底部
+            // 修复移动端滚动
+            updateVhVariable();
             scrollToBottom();
             
             // 移动端浏览器地址栏处理
             if ('virtualKeyboard' in navigator) {
                 navigator.virtualKeyboard.overlaysContent = true;
             }
+            
+            // 添加额外的滚动监听
+            chatContainer.addEventListener('scroll', () => {
+                // 检测滚动位置
+                const isAtBottom = (chatContainer.scrollHeight - chatContainer.scrollTop - chatContainer.clientHeight) < 10;
+                
+                // 如果用户主动滚动到底部，记录这个状态
+                if (isAtBottom) {
+                    localStorage.setItem('chatAutoScroll', 'true');
+                } else {
+                    localStorage.setItem('chatAutoScroll', 'false');
+                }
+            });
+        });
+        
+        // 当消息容器发生变化时，根据用户滚动状态决定是否滚动到底部
+        const chatObserver = new MutationObserver(() => {
+            const shouldAutoScroll = localStorage.getItem('chatAutoScroll') !== 'false';
+            if (shouldAutoScroll) {
+                scrollToBottom();
+            }
+        });
+        
+        // 启动观察
+        chatObserver.observe(document.getElementById('chatContainer'), { 
+            childList: true, 
+            subtree: true 
         });
     </script>
 </body>
