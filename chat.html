@@ -408,6 +408,16 @@
             .message-input button {
                 padding: 0.8rem 1.5rem;
             }
+            
+            /* 增加移动端底部空间 */
+            .message-input-container {
+                padding-bottom: calc(1rem + 10px);
+            }
+            
+            /* iOS Safari兼容性修复 */
+            .chat-container {
+                padding-bottom: 80px; /* 为键盘和底部导航提供额外空间 */
+            }
         }
 
         @media (max-width: 480px) {
@@ -437,6 +447,21 @@
                 width: 30px;
                 height: 30px;
                 font-size: 14px;
+            }
+            
+            .message-input-container {
+                padding-bottom: calc(1rem + 15px);
+            }
+            
+            .chat-container {
+                padding-bottom: 100px; /* 小屏幕设备提供更多空间 */
+            }
+        }
+
+        /* 移动端底部安全区域适配 */
+        @supports (padding-bottom: env(safe-area-inset-bottom)) {
+            .message-input-container {
+                padding-bottom: calc(1rem + env(safe-area-inset-bottom));
             }
         }
     </style>
@@ -1150,6 +1175,43 @@
                 }, 500);
             }
         }
+
+        // 添加视口高度修复
+        function updateVhVariable() {
+            // 获取视口的真实高度
+            let vh = window.innerHeight * 0.01;
+            // 设置自定义属性 --vh
+            document.documentElement.style.setProperty('--vh', `${vh}px`);
+        }
+        
+        // 初始化时调用一次
+        updateVhVariable();
+        
+        // 在窗口大小改变或设备方向改变时更新
+        window.addEventListener('resize', updateVhVariable);
+        window.addEventListener('orientationchange', updateVhVariable);
+        
+        // 处理虚拟键盘
+        const chatContainer = document.querySelector('.chat-container');
+        const messageInput = document.querySelector('.message-input input');
+        
+        messageInput.addEventListener('focus', () => {
+            // 聊天输入框获得焦点时，确保滚动到底部
+            setTimeout(() => {
+                scrollToBottom();
+            }, 300); // 延迟确保键盘已完全展开
+        });
+        
+        // 加载页面完成后初始化
+        window.addEventListener('load', () => {
+            // 滚动到底部
+            scrollToBottom();
+            
+            // 移动端浏览器地址栏处理
+            if ('virtualKeyboard' in navigator) {
+                navigator.virtualKeyboard.overlaysContent = true;
+            }
+        });
     </script>
 </body>
 </html> 
