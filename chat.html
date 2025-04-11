@@ -595,6 +595,51 @@
             font-size: 14px;
             border: 1px solid #e9ecef;
         }
+
+        /* 添加新消息通知样式 */
+        .chat-notification {
+            position: fixed;
+            top: 80px;
+            right: 20px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            padding: 12px;
+            z-index: 1001;
+            display: none;
+            animation: slideIn 0.3s ease;
+        }
+
+        .notification-content {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .notification-content button {
+            padding: 6px 12px;
+            border: none;
+            border-radius: 4px;
+            background: linear-gradient(135deg, #3498db, #2ecc71);
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .notification-content button:hover {
+            opacity: 0.9;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
     </style>
 </head>
 <body>
@@ -1284,7 +1329,51 @@
                     try {
                         console.log('收到消息:', event.data);
                         const message = JSON.parse(event.data);
-                        displayMessage(message);
+                        
+                        // 处理不同类型的消息
+                        if (message.type === 'message') {
+                            // 检查是否应该显示这条消息
+                            const shouldDisplay = 
+                                // 公共消息
+                                (message.channel === 'public' && currentChatType === 'public') ||
+                                // 私聊消息 - 当前用户是发送者或接收者
+                                (message.channel === 'private' && (
+                                    // 当前用户是发送者且正在与接收者聊天
+                                    (message.userId === currentUser.id && 
+                                     currentTargetUser && 
+                                     message.targetUserId === currentTargetUser.id) ||
+                                    // 当前用户是接收者且正在与发送者聊天
+                                    (message.targetUserId === currentUser.id && 
+                                     currentTargetUser && 
+                                     message.userId === currentTargetUser.id)
+                                ));
+
+                            if (shouldDisplay) {
+                                displayMessage(message);
+                                // 如果是私聊消息，确保参与者列表包含发送者和接收者
+                                if (message.channel === 'private') {
+                                    const sender = {
+                                        id: message.userId,
+                                        name: message.userName,
+                                        role: message.role
+                                    };
+                                    const receiver = {
+                                        id: message.targetUserId,
+                                        name: message.targetUserName,
+                                        role: message.targetRole || 'user'
+                                    };
+                                    participants.add(JSON.stringify(sender));
+                                    participants.add(JSON.stringify(receiver));
+                                    displayParticipants();
+                                }
+                            } else if (message.channel === 'private' && 
+                                     message.targetUserId === currentUser.id && 
+                                     (!currentTargetUser || message.userId !== currentTargetUser.id)) {
+                                // 如果是发给当前用户的新私聊消息，但当前不在对应的聊天窗口
+                                // 可以添加一个通知或提示
+                                showNewMessageNotification(message);
+                            }
+                        }
                     } catch (error) {
                         console.error('处理消息时出错:', error);
                     }
@@ -1402,6 +1491,95 @@
                 console.error('发送消息时出错:', error);
             }
         }
+
+        // 添加新消息通知函数
+        function showNewMessageNotification(message) {
+            // 创建或获取通知元素
+            let notificationElement = document.querySelector('.chat-notification');
+            if (!notificationElement) {
+                notificationElement = document.createElement('div');
+                notificationElement.className = 'chat-notification';
+                document.querySelector('.chat-section').appendChild(notificationElement);
+            }
+
+            // 更新通知内容
+            notificationElement.innerHTML = `
+                <div class="notification-content">
+                    <strong>${message.userName}</strong> 发来新消息: ${message.content}
+                    <button onclick="switchToPrivateChat('${message.userId}', '${message.userName}', '${message.role}')">
+                        查看对话
+                    </button>
+                </div>
+            `;
+
+            // 显示通知
+            notificationElement.style.display = 'block';
+            
+            // 5秒后自动隐藏
+            setTimeout(() => {
+                notificationElement.style.display = 'none';
+            }, 5000);
+        }
+
+        // 添加切换到私聊的函数
+        function switchToPrivateChat(userId, userName, userRole) {
+            currentChatType = 'private';
+            currentTargetUser = {
+                id: userId,
+                name: userName,
+                role: userRole
+            };
+            loadChatHistory();
+        }
+
+        // 添加通知样式
+        const styleSheet = document.createElement('style');
+        styleSheet.textContent = `
+            .chat-notification {
+                position: fixed;
+                top: 80px;
+                right: 20px;
+                background: white;
+                border-radius: 8px;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+                padding: 12px;
+                z-index: 1001;
+                display: none;
+                animation: slideIn 0.3s ease;
+            }
+
+            .notification-content {
+                display: flex;
+                flex-direction: column;
+                gap: 8px;
+            }
+
+            .notification-content button {
+                padding: 6px 12px;
+                border: none;
+                border-radius: 4px;
+                background: linear-gradient(135deg, #3498db, #2ecc71);
+                color: white;
+                cursor: pointer;
+                transition: all 0.3s ease;
+            }
+
+            .notification-content button:hover {
+                opacity: 0.9;
+            }
+
+            @keyframes slideIn {
+                from {
+                    transform: translateX(100%);
+                    opacity: 0;
+                }
+                to {
+                    transform: translateX(0);
+                    opacity: 1;
+                }
+            }
+        `;
+        document.head.appendChild(styleSheet);
     </script>
 </body>
 </html> 
