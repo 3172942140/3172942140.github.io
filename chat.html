@@ -34,19 +34,38 @@
             padding: 20px;
             display: flex;
             flex-direction: column;
-            gap: 10px;
         }
 
         .chat-container {
-            flex: 1;
             width: 100%;
             background: #f8f9fa;
             border: 1px solid #e9ecef;
             border-radius: 8px;
             padding: 20px;
+            height: 600px; /* 固定高度 */
             overflow-y: auto;
-            min-height: 500px;
             margin-bottom: 10px;
+            scrollbar-width: thin;
+            scrollbar-color: rgba(0,0,0,0.2) transparent;
+        }
+
+        /* 滚动条样式 */
+        .chat-container::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .chat-container::-webkit-scrollbar-track {
+            background: transparent;
+            border-radius: 3px;
+        }
+
+        .chat-container::-webkit-scrollbar-thumb {
+            background-color: rgba(0,0,0,0.2);
+            border-radius: 3px;
+        }
+
+        .chat-container::-webkit-scrollbar-thumb:hover {
+            background-color: rgba(0,0,0,0.3);
         }
 
         /* 消息样式 */
@@ -297,6 +316,11 @@
                 padding: 15px;
             }
 
+            .chat-container {
+                height: calc(100vh - 250px); /* 移动端使用视口高度计算 */
+                padding: 15px;
+            }
+
             .message {
                 max-width: 85%;
                 margin: 10px 40px;
@@ -335,6 +359,11 @@
             }
 
             .chat-section {
+                padding: 10px;
+            }
+
+            .chat-container {
+                height: calc(100vh - 200px);
                 padding: 10px;
             }
 
@@ -417,8 +446,10 @@
 
     <main class="main-content">
         <div class="chat-wrapper">
-            <div class="chat-section" id="chatSection">
-                <div class="chat-container" id="chatContainer"></div>
+            <div class="chat-section">
+                <div class="chat-container" id="chatContainer">
+                    <!-- 消息将在这里动态添加 -->
+                </div>
                 <div class="message-input">
                     <input type="text" id="messageInput" placeholder="输入消息...">
                     <button onclick="sendMessage()">发送</button>
@@ -921,11 +952,9 @@
             const avatarDiv = document.createElement('div');
             avatarDiv.className = 'message-avatar';
             if (message.role === 'admin') {
-                // 只有 admin 角色的用户才使用特定图片
                 avatarDiv.style.backgroundImage = "url('/images/宇智波pdx.png')";
                 avatarDiv.style.backgroundSize = 'cover';
             } else {
-                // 其他用户使用昵称第一个字符
                 avatarDiv.textContent = message.userName.charAt(0);
             }
 
