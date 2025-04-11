@@ -1338,18 +1338,19 @@
                                 (message.channel === 'public' && currentChatType === 'public') ||
                                 // 私聊消息 - 当前用户是发送者或接收者
                                 (message.channel === 'private' && (
-                                    // 当前用户是发送者且正在与接收者聊天
-                                    (message.userId === currentUser.id && 
-                                     currentTargetUser && 
-                                     message.targetUserId === currentTargetUser.id) ||
                                     // 当前用户是接收者且正在与发送者聊天
                                     (message.targetUserId === currentUser.id && 
                                      currentTargetUser && 
-                                     message.userId === currentTargetUser.id)
+                                     message.userId === currentTargetUser.id) ||
+                                    // 当前用户是发送者且正在与接收者聊天，但不显示自己发送的消息
+                                    (message.userId === currentUser.id && 
+                                     currentTargetUser && 
+                                     message.targetUserId === currentTargetUser.id && 
+                                     false) // 不显示自己发送的消息
                                 ));
 
                             if (shouldDisplay) {
-                        displayMessage(message);
+                                displayMessage(message, true);
                                 // 如果是私聊消息，确保参与者列表包含发送者和接收者
                                 if (message.channel === 'private') {
                                     const sender = {
@@ -1370,7 +1371,6 @@
                                      message.targetUserId === currentUser.id && 
                                      (!currentTargetUser || message.userId !== currentTargetUser.id)) {
                                 // 如果是发给当前用户的新私聊消息，但当前不在对应的聊天窗口
-                                // 可以添加一个通知或提示
                                 showNewMessageNotification(message);
                             }
                         }
@@ -1485,7 +1485,7 @@
                 ws.send(JSON.stringify(message));
                 input.value = '';
                 
-                // 显示消息到UI
+                // 直接在本地显示自己发送的消息
                 displayMessage(message, true);
             } catch (error) {
                 console.error('发送消息时出错:', error);
