@@ -741,43 +741,34 @@
         // 添加在线用户管理
         let onlineUsers = new Map();
 
-        // 添加获取在线用户的函数
-        async function fetchOnlineUsers() {
-            try {
-                const response = await fetch(`${WORKER_URL}/api/chat/online-users`);
-                if (response.ok) {
-                    const data = await response.json();
-                    if (data.success) {
-                        // 清空当前在线用户列表
-                        onlineUsers.clear();
-                        
-                        // 更新在线用户列表
-                        data.users.forEach(user => {
-                            if (user.userId !== currentUser.id) { // 不包含自己
-                                onlineUsers.set(user.userId, {
-                                    userName: user.userName,
-                                    role: user.role,
-                                    lastActive: user.lastActive
-                                });
-                            }
-                        });
-                        
-                        // 更新显示
-                        displayParticipants();
-                    }
-                }
-            } catch (error) {
-                console.error('获取在线用户列表失败:', error);
-            }
-        }
-
         // 修改显示参与者函数，添加在线状态显示
         function displayParticipants() {
             const participantsContainer = document.querySelector('.chat-participants');
             participantsContainer.innerHTML = '';
 
-            const sortedParticipants = Array.from(participants)
-                .map(p => JSON.parse(p))
+            // 创建一个新的Map来存储所有要显示的用户
+            const displayUsers = new Map();
+
+            // 首先添加所有在线用户
+            onlineUsers.forEach((user, userId) => {
+                displayUsers.set(userId, {
+                    id: userId,
+                    name: user.userName,
+                    role: user.role,
+                    isOnline: true
+                });
+            });
+
+            // 添加当前用户
+            displayUsers.set(currentUser.id, {
+                id: currentUser.id,
+                name: currentUser.name,
+                role: currentUser.role,
+                isOnline: true
+            });
+
+            // 将displayUsers转换为数组并排序
+            const sortedParticipants = Array.from(displayUsers.values())
                 .sort((a, b) => {
                     if (a.role === 'admin' && b.role !== 'admin') return -1;
                     if (a.role !== 'admin' && b.role === 'admin') return 1;
@@ -799,7 +790,7 @@
                 }
 
                 // 添加在线状态指示器（只为其他用户添加）
-                if (participant.id !== currentUser.id && onlineUsers.has(participant.id)) {
+                if (participant.id !== currentUser.id && participant.isOnline) {
                     const onlineStatus = document.createElement('div');
                     onlineStatus.className = 'online-status';
                     participantDiv.appendChild(onlineStatus);
@@ -839,7 +830,7 @@
                 tooltipRole.textContent = participant.role === 'admin' ? '管理员' : '用户';
 
                 // 添加在线状态文本（只为其他用户添加）
-                if (participant.id !== currentUser.id && onlineUsers.has(participant.id)) {
+                if (participant.id !== currentUser.id && participant.isOnline) {
                     const onlineText = document.createElement('div');
                     onlineText.className = 'tooltip-online-status';
                     onlineText.textContent = '在线';
@@ -922,6 +913,36 @@
 
                 participantsContainer.appendChild(participantDiv);
             });
+        }
+
+        // 修改获取在线用户的函数
+        async function fetchOnlineUsers() {
+            try {
+                const response = await fetch(`${WORKER_URL}/api/chat/online-users`);
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.success) {
+                        // 清空当前在线用户列表
+                        onlineUsers.clear();
+                        
+                        // 更新在线用户列表
+                        data.users.forEach(user => {
+                            if (user.userId !== currentUser.id) { // 不包含自己
+                                onlineUsers.set(user.userId, {
+                                    userName: user.userName,
+                                    role: user.role,
+                                    lastActive: user.lastActive
+                                });
+                            }
+                        });
+                        
+                        // 更新显示
+                        displayParticipants();
+                    }
+                }
+            } catch (error) {
+                console.error('获取在线用户列表失败:', error);
+            }
         }
 
         // 更新参与者列表
@@ -1339,7 +1360,7 @@
             }
             document.getElementById('chatSection').style.display = 'none';
             document.getElementById('chatContainer').innerHTML = '';
-            redirectToLogin();
+            window.location.reload();
         }
 
         function updateConnectionStatus(status, message) {
