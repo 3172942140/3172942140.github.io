@@ -928,14 +928,24 @@
             // 创建一个新的Map来存储所有要显示的用户
             const displayUsers = new Map();
 
-            // 首先添加所有在线用户
-            onlineUsers.forEach((user, userId) => {
-                displayUsers.set(userId, {
-                    id: userId,
-                    name: user.userName,
-                    role: user.role,
-                    isOnline: true
+            // 首先添加所有发过消息的用户（从participants Set中）
+            participants.forEach(participantString => {
+                const participant = JSON.parse(participantString);
+                displayUsers.set(participant.id, {
+                    id: participant.id,
+                    name: participant.name,
+                    role: participant.role,
+                    isOnline: false // 默认设置为离线
                 });
+            });
+
+            // 更新在线状态（只更新那些发过消息的用户）
+            onlineUsers.forEach((user, userId) => {
+                if (displayUsers.has(userId)) {
+                    const existingUser = displayUsers.get(userId);
+                    existingUser.isOnline = true;
+                    displayUsers.set(userId, existingUser);
+                }
             });
 
             // 添加当前用户
@@ -949,8 +959,13 @@
             // 将displayUsers转换为数组并排序
             const sortedParticipants = Array.from(displayUsers.values())
                 .sort((a, b) => {
+                    // 首先按在线状态排序
+                    if (a.isOnline && !b.isOnline) return -1;
+                    if (!a.isOnline && b.isOnline) return 1;
+                    // 然后按角色排序
                     if (a.role === 'admin' && b.role !== 'admin') return -1;
                     if (a.role !== 'admin' && b.role === 'admin') return 1;
+                    // 最后按名字排序
                     return a.name.localeCompare(b.name);
                 });
 
@@ -968,7 +983,7 @@
                     avatarDiv.textContent = participant.name.charAt(0);
                 }
 
-                // 添加在线状态指示器（只为其他用户添加）
+                // 添加在线状态指示器（只为其他在线用户添加）
                 if (participant.id !== currentUser.id && participant.isOnline) {
                     const onlineStatus = document.createElement('div');
                     onlineStatus.className = 'online-status';
@@ -1009,11 +1024,11 @@
                 tooltipRole.textContent = participant.role === 'admin' ? '博客主' : '用户';
 
                 // 添加在线状态文本（只为其他用户添加）
-                if (participant.id !== currentUser.id && participant.isOnline) {
+                if (participant.id !== currentUser.id) {
                     const onlineText = document.createElement('div');
                     onlineText.className = 'tooltip-online-status';
-                    onlineText.textContent = '在线';
-                    onlineText.style.color = '#2ecc71';
+                    onlineText.textContent = participant.isOnline ? '在线' : '离线';
+                    onlineText.style.color = participant.isOnline ? '#2ecc71' : '#666';
                     onlineText.style.fontSize = '12px';
                     onlineText.style.marginTop = '4px';
                     tooltipInfo.appendChild(onlineText);
