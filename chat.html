@@ -928,6 +928,15 @@
             // 创建一个新的Map来存储所有要显示的用户
             const displayUsers = new Map();
 
+            // 添加公共频道选项
+            const publicChannel = {
+                id: 'public-channel',
+                name: '公共频道',
+                role: 'channel',
+                isOnline: true
+            };
+            displayUsers.set(publicChannel.id, publicChannel);
+
             // 首先添加所有发过消息的用户（从participants Set中）
             participants.forEach(participantString => {
                 const participant = JSON.parse(participantString);
@@ -959,7 +968,10 @@
             // 将displayUsers转换为数组并排序
             const sortedParticipants = Array.from(displayUsers.values())
                 .sort((a, b) => {
-                    // 首先按在线状态排序
+                    // 公共频道始终排在最前面
+                    if (a.id === 'public-channel') return -1;
+                    if (b.id === 'public-channel') return 1;
+                    // 然后按在线状态排序
                     if (a.isOnline && !b.isOnline) return -1;
                     if (!a.isOnline && b.isOnline) return 1;
                     // 然后按角色排序
@@ -973,18 +985,30 @@
                 const participantDiv = document.createElement('div');
                 participantDiv.className = `participant ${participant.role}`;
 
+                // 为公共频道添加特殊样式
+                if (participant.id === 'public-channel') {
+                    participantDiv.style.backgroundColor = '#f0f2f5';
+                    if (currentChatType === 'public') {
+                        participantDiv.style.borderColor = '#3498db';
+                        participantDiv.style.borderWidth = '2px';
+                    }
+                }
+
                 // 创建头像
                 const avatarDiv = document.createElement('div');
                 avatarDiv.className = 'participant-avatar';
-                if (participant.role === 'admin') {
+                if (participant.id === 'public-channel') {
+                    avatarDiv.innerHTML = '<i class="fas fa-users"></i>';
+                    avatarDiv.style.backgroundColor = '#3498db';
+                } else if (participant.role === 'admin') {
                     avatarDiv.style.backgroundImage = "url('/images/宇智波pdx.png')";
                     avatarDiv.style.backgroundSize = 'cover';
                 } else {
                     avatarDiv.textContent = participant.name.charAt(0);
                 }
 
-                // 添加在线状态指示器（只为其他在线用户添加）
-                if (participant.id !== currentUser.id && participant.isOnline) {
+                // 添加在线状态指示器（只为其他在线用户添加，不包括公共频道）
+                if (participant.id !== currentUser.id && participant.id !== 'public-channel' && participant.isOnline) {
                     const onlineStatus = document.createElement('div');
                     onlineStatus.className = 'online-status';
                     participantDiv.appendChild(onlineStatus);
@@ -1002,7 +1026,10 @@
                 // 创建提示框头像
                 const tooltipAvatar = document.createElement('div');
                 tooltipAvatar.className = `tooltip-avatar ${participant.role}`;
-                if (participant.role === 'admin') {
+                if (participant.id === 'public-channel') {
+                    tooltipAvatar.innerHTML = '<i class="fas fa-users"></i>';
+                    tooltipAvatar.style.backgroundColor = '#3498db';
+                } else if (participant.role === 'admin') {
                     tooltipAvatar.style.backgroundImage = "url('/images/宇智波pdx.png')";
                     tooltipAvatar.style.backgroundSize = 'cover';
                 } else {
@@ -1021,10 +1048,15 @@
                 // 添加角色
                 const tooltipRole = document.createElement('div');
                 tooltipRole.className = `tooltip-role ${participant.role}`;
-                tooltipRole.textContent = participant.role === 'admin' ? '博客主' : '用户';
+                if (participant.id === 'public-channel') {
+                    tooltipRole.textContent = '公共聊天室';
+                    tooltipRole.style.backgroundColor = '#3498db';
+                } else {
+                    tooltipRole.textContent = participant.role === 'admin' ? '博客主' : '用户';
+                }
 
-                // 添加在线状态文本（只为其他用户添加）
-                if (participant.id !== currentUser.id) {
+                // 添加在线状态文本（只为普通用户添加，不包括公共频道）
+                if (participant.id !== currentUser.id && participant.id !== 'public-channel') {
                     const onlineText = document.createElement('div');
                     onlineText.className = 'tooltip-online-status';
                     onlineText.textContent = participant.isOnline ? '在线' : '离线';
@@ -1040,8 +1072,19 @@
                 tooltipDiv.appendChild(tooltipAvatar);
                 tooltipDiv.appendChild(tooltipInfo);
 
-                // 添加聊天按钮（不为自己添加）
-                if (participant.id !== currentUser.id) {
+                // 添加聊天按钮
+                if (participant.id === 'public-channel') {
+                    if (currentChatType !== 'public') {
+                        const chatButton = document.createElement('button');
+                        chatButton.className = 'tooltip-button';
+                        chatButton.textContent = '进入公共聊天';
+                        chatButton.onclick = (e) => {
+                            e.stopPropagation();
+                            backToPublicChat();
+                        };
+                        tooltipDiv.appendChild(chatButton);
+                    }
+                } else if (participant.id !== currentUser.id) {
                     const chatButton = document.createElement('button');
                     chatButton.className = 'tooltip-button';
                     chatButton.textContent = '发起私聊';
@@ -1056,6 +1099,16 @@
                 participantDiv.appendChild(avatarDiv);
                 participantDiv.appendChild(nameSpan);
                 participantDiv.appendChild(tooltipDiv);
+
+                // 添加点击事件（仅为公共频道）
+                if (participant.id === 'public-channel') {
+                    participantDiv.style.cursor = 'pointer';
+                    participantDiv.onclick = () => {
+                        if (currentChatType !== 'public') {
+                            backToPublicChat();
+                        }
+                    };
+                }
 
                 // 添加鼠标事件处理
                 let tooltipTimeout;
