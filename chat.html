@@ -499,9 +499,19 @@
         document.addEventListener('DOMContentLoaded', () => {
             checkAuthStatus();
             
-            // 监听窗口大小变化
+            // 监听窗口大小变化，只更新UI元素
             window.addEventListener('resize', () => {
-                checkAuthStatus();
+                const userData = JSON.parse(localStorage.getItem('user'));
+                if (userData) {
+                    const authButtons = document.querySelector('.auth-buttons');
+                    if (authButtons) {
+                        const isMobile = window.innerWidth <= 768;
+                        authButtons.innerHTML = `
+                            <span>${isMobile ? userData.name : '欢迎，' + userData.name}</span>
+                            <button class="btn-outline" onclick="logout()">退出</button>
+                        `;
+                    }
+                }
             });
 
             // 绑定登录按钮事件
