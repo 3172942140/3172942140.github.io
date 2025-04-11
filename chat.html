@@ -94,7 +94,7 @@
 
         /* 提示框按钮样式 */
         .tooltip-button {
-            margin-top: 8px;
+            margin: 12px auto 4px;
             padding: 6px 12px;
             border: none;
             border-radius: 15px;
@@ -105,6 +105,7 @@
             transition: all 0.3s ease;
             width: auto;
             min-width: 80px;
+            display: block;
         }
 
         .tooltip-button:hover {
@@ -640,6 +641,27 @@
                 opacity: 1;
             }
         }
+
+        /* 添加在线状态样式 */
+        .participant {
+            position: relative;
+        }
+
+        .online-status {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background-color: #2ecc71;
+            border: 2px solid white;
+            bottom: -2px;
+            right: -2px;
+            z-index: 3;
+        }
+
+        .participant-avatar {
+            position: relative;
+        }
     </style>
 </head>
 <body>
@@ -716,7 +738,40 @@
         // 存储参与者信息的Set
         const participants = new Set();
 
-        // 显示参与者列表
+        // 添加在线用户管理
+        let onlineUsers = new Map();
+
+        // 添加获取在线用户的函数
+        async function fetchOnlineUsers() {
+            try {
+                const response = await fetch(`${WORKER_URL}/api/chat/online-users`);
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.success) {
+                        // 清空当前在线用户列表
+                        onlineUsers.clear();
+                        
+                        // 更新在线用户列表
+                        data.users.forEach(user => {
+                            if (user.userId !== currentUser.id) { // 不包含自己
+                                onlineUsers.set(user.userId, {
+                                    userName: user.userName,
+                                    role: user.role,
+                                    lastActive: user.lastActive
+                                });
+                            }
+                        });
+                        
+                        // 更新显示
+                        displayParticipants();
+                    }
+                }
+            } catch (error) {
+                console.error('获取在线用户列表失败:', error);
+            }
+        }
+
+        // 修改显示参与者函数，添加在线状态显示
         function displayParticipants() {
             const participantsContainer = document.querySelector('.chat-participants');
             participantsContainer.innerHTML = '';
@@ -741,6 +796,13 @@
                     avatarDiv.style.backgroundSize = 'cover';
                 } else {
                     avatarDiv.textContent = participant.name.charAt(0);
+                }
+
+                // 添加在线状态指示器（只为其他用户添加）
+                if (participant.id !== currentUser.id && onlineUsers.has(participant.id)) {
+                    const onlineStatus = document.createElement('div');
+                    onlineStatus.className = 'online-status';
+                    participantDiv.appendChild(onlineStatus);
                 }
 
                 // 创建名字
@@ -776,21 +838,34 @@
                 tooltipRole.className = `tooltip-role ${participant.role}`;
                 tooltipRole.textContent = participant.role === 'admin' ? '管理员' : '用户';
 
-                // 添加聊天按钮
-                const chatButton = document.createElement('button');
-                chatButton.className = 'tooltip-button';
-                chatButton.textContent = '发起私聊';
-                chatButton.onclick = (e) => {
-                    e.stopPropagation(); // 阻止事件冒泡
-                    startPrivateChat(participant);
-                };
+                // 添加在线状态文本（只为其他用户添加）
+                if (participant.id !== currentUser.id && onlineUsers.has(participant.id)) {
+                    const onlineText = document.createElement('div');
+                    onlineText.className = 'tooltip-online-status';
+                    onlineText.textContent = '在线';
+                    onlineText.style.color = '#2ecc71';
+                    onlineText.style.fontSize = '12px';
+                    onlineText.style.marginTop = '4px';
+                    tooltipInfo.appendChild(onlineText);
+                }
 
                 // 组装提示框
                 tooltipInfo.appendChild(tooltipName);
                 tooltipInfo.appendChild(tooltipRole);
-                tooltipInfo.appendChild(chatButton);
                 tooltipDiv.appendChild(tooltipAvatar);
                 tooltipDiv.appendChild(tooltipInfo);
+
+                // 添加聊天按钮（不为自己添加）
+                if (participant.id !== currentUser.id) {
+                    const chatButton = document.createElement('button');
+                    chatButton.className = 'tooltip-button';
+                    chatButton.textContent = '发起私聊';
+                    chatButton.onclick = (e) => {
+                        e.stopPropagation();
+                        startPrivateChat(participant);
+                    };
+                    tooltipDiv.appendChild(chatButton);
+                }
 
                 // 组装参与者元素
                 participantDiv.appendChild(avatarDiv);
@@ -825,15 +900,13 @@
                     const tooltip = participantDiv.querySelector('.participant-tooltip');
                     const relatedTarget = e.relatedTarget;
                     
-                    // 检查鼠标是否移动到提示框上
                     if (!tooltip.contains(relatedTarget)) {
                         tooltipTimeout = setTimeout(() => {
                             tooltip.classList.remove('show');
-                        }, 200); // 添加200ms延迟
+                        }, 200);
                     }
                 });
 
-                // 为提示框添加鼠标事件
                 tooltipDiv.addEventListener('mouseenter', () => {
                     clearTimeout(tooltipTimeout);
                 });
@@ -843,7 +916,7 @@
                     if (!participantDiv.contains(relatedTarget)) {
                         tooltipTimeout = setTimeout(() => {
                             tooltipDiv.classList.remove('show');
-                        }, 200); // 添加200ms延迟
+                        }, 200);
                     }
                 });
 
@@ -1313,13 +1386,17 @@
                     updateConnectionStatus('connected', '已连接');
                     
                     try {
-                        // 发送登录消息到WebSocket，使用正确的用户信息
+                        // 发送登录消息到WebSocket
                         ws.send(JSON.stringify({
                             type: 'login',
                             userId: currentUser.id,
                             userName: currentUser.name,
                             role: currentUser.role
                         }));
+
+                        // 开始定期获取在线用户
+                        fetchOnlineUsers();
+                        setInterval(fetchOnlineUsers, 30000); // 每30秒更新一次
                     } catch (error) {
                         console.error('发送登录消息时出错:', error);
                     }
