@@ -1334,20 +1334,14 @@
                         if (message.type === 'message') {
                             // 检查是否应该显示这条消息
                             const shouldDisplay = 
-                                // 公共消息
-                                (message.channel === 'public' && currentChatType === 'public') ||
-                                // 私聊消息 - 当前用户是发送者或接收者
-                                (message.channel === 'private' && (
-                                    // 当前用户是接收者且正在与发送者聊天
-                                    (message.targetUserId === currentUser.id && 
-                                     currentTargetUser && 
-                                     message.userId === currentTargetUser.id) ||
-                                    // 当前用户是发送者且正在与接收者聊天，但不显示自己发送的消息
-                                    (message.userId === currentUser.id && 
-                                     currentTargetUser && 
-                                     message.targetUserId === currentTargetUser.id && 
-                                     false) // 不显示自己发送的消息
-                                ));
+                                // 公共消息，但不显示自己发送的消息
+                                (message.channel === 'public' && 
+                                 message.userId !== currentUser.id) ||
+                                // 私聊消息 - 当前用户是接收者且正在与发送者聊天
+                                (message.channel === 'private' && 
+                                 message.targetUserId === currentUser.id && 
+                                 currentTargetUser && 
+                                 message.userId === currentTargetUser.id);
 
                             if (shouldDisplay) {
                                 displayMessage(message, true);
