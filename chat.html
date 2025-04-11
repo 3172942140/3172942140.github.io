@@ -827,7 +827,7 @@
                 // 添加角色
                 const tooltipRole = document.createElement('div');
                 tooltipRole.className = `tooltip-role ${participant.role}`;
-                tooltipRole.textContent = participant.role === 'admin' ? '管理员' : '用户';
+                tooltipRole.textContent = participant.role === 'admin' ? '博客主' : '用户';
 
                 // 添加在线状态文本（只为其他用户添加）
                 if (participant.id !== currentUser.id && participant.isOnline) {
