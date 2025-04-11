@@ -18,10 +18,7 @@
             display: flex;
             flex-direction: column;
             height: 100vh;
-            height: calc(var(--vh, 1vh) * 100);
             overflow: hidden; /* 防止整个页面滚动 */
-            position: fixed;
-            width: 100%;
         }
         
         .main-content {
@@ -123,33 +120,36 @@
         .chat-container {
             width: 100%;
             flex: 1;
-            overflow-y: auto; /* 只有这一个容器滚动 */
             background-color: #f9f9f9;
             box-shadow: 0 4px 6px rgba(0,0,0,0.05);
             position: relative;
-            -webkit-overflow-scrolling: touch; /* 增强iOS滚动体验 */
-            max-height: calc(100vh - 120px);
-            max-height: calc((var(--vh, 1vh) * 100) - 120px);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden; /* 防止外部容器滚动 */
         }
 
         .chat-container-inner {
             max-width: 1400px;
             margin: 0 auto;
             padding: 1.5rem;
-            padding-bottom: 2rem;
-            min-height: 100%;
-            position: relative;
+            padding-bottom: 5rem; /* 为输入框留出足够空间 */
+            flex: 1;
+            overflow-y: auto; /* 只让内部容器滚动 */
+            width: 100%;
+            scroll-behavior: smooth; /* 平滑滚动 */
         }
 
         .message-input-container {
             width: 100%;
             background-color: #fff;
             border-top: 1px solid #e0e0e0;
-            padding: 1rem 0;
-            position: sticky;
+            padding: 0.75rem 0;
+            position: absolute; /* 改为绝对定位 */
             bottom: 0;
+            left: 0;
+            right: 0;
             z-index: 10;
-            flex-shrink: 0; /* 防止输入框被压缩 */
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
         }
 
         .message-input {
@@ -415,23 +415,6 @@
             .message-input button {
                 padding: 0.8rem 1.5rem;
             }
-            
-            /* 修改移动端底部空间 */
-            .message-input-container {
-                padding-bottom: calc(1rem + 10px);
-                position: fixed;
-                bottom: 0;
-                left: 0;
-                right: 0;
-            }
-            
-            /* 修改移动端滚动区域 */
-            .chat-container {
-                padding-bottom: 100px; /* 为输入框提供足够空间 */
-                margin-bottom: 60px;
-                max-height: calc(100vh - 170px);
-                max-height: calc((var(--vh, 1vh) * 100) - 170px);
-            }
         }
 
         @media (max-width: 480px) {
@@ -461,24 +444,6 @@
                 width: 30px;
                 height: 30px;
                 font-size: 14px;
-            }
-            
-            .message-input-container {
-                padding-bottom: calc(1rem + 15px);
-            }
-            
-            .chat-container {
-                padding-bottom: 120px; /* 小屏幕设备提供更多空间 */
-                margin-bottom: 70px;
-                max-height: calc(100vh - 180px);
-                max-height: calc((var(--vh, 1vh) * 100) - 180px);
-            }
-        }
-
-        /* 移动端底部安全区域适配 */
-        @supports (padding-bottom: env(safe-area-inset-bottom)) {
-            .message-input-container {
-                padding-bottom: calc(1rem + env(safe-area-inset-bottom));
             }
         }
     </style>
@@ -516,12 +481,12 @@
             <div class="chat-container-inner" id="chatContainer">
                 <!-- 聊天消息将显示在这里 -->
             </div>
-        </div>
-        
-        <div class="message-input-container">
-            <div class="message-input">
-                <input type="text" id="messageInput" placeholder="输入消息...">
-                <button onclick="sendMessage()">发送</button>
+            
+            <div class="message-input-container">
+                <div class="message-input">
+                    <input type="text" id="messageInput" placeholder="输入消息...">
+                    <button onclick="sendMessage()">发送</button>
+                </div>
             </div>
         </div>
     </main>
@@ -1150,114 +1115,38 @@
             }
         }
 
-        // 改进的滚动到底部函数
+        // 滚动到聊天区域底部
         function scrollToBottom() {
-            const chatContainer = document.querySelector('.chat-container');
-            if (chatContainer) {
-                const scrollHeight = chatContainer.scrollHeight;
-                const height = chatContainer.clientHeight;
-                const maxScrollTop = scrollHeight - height;
-                chatContainer.scrollTop = maxScrollTop > 0 ? maxScrollTop : 0;
-                
-                // 第二次尝试，确保真的滚动到底部
-                setTimeout(() => {
-                    chatContainer.scrollTop = chatContainer.scrollHeight;
-                }, 50);
-            }
-        }
-        
-        // 修复移动端滚动问题的函数
-        function fixMobileScroll() {
-            const chatContainer = document.querySelector('.chat-container');
-            const messageInputContainer = document.querySelector('.message-input-container');
+            const chatContainerInner = document.getElementById('chatContainer');
             
-            // 调整聊天容器高度
-            if (window.innerWidth <= 768) {
-                const inputHeight = messageInputContainer.offsetHeight;
-                chatContainer.style.paddingBottom = `${inputHeight + 20}px`;
-            } else {
-                chatContainer.style.paddingBottom = ''; // 恢复默认值
-            }
-            
-            // 确保滚动到底部
-            scrollToBottom();
-        }
-        
-        // 添加视口高度修复
-        function updateVhVariable() {
-            // 获取视口的真实高度
-            let vh = window.innerHeight * 0.01;
-            // 设置自定义属性 --vh
-            document.documentElement.style.setProperty('--vh', `${vh}px`);
-            // 修复移动端滚动
-            fixMobileScroll();
-        }
-        
-        // 初始化时调用一次
-        updateVhVariable();
-        
-        // 在窗口大小改变或设备方向改变时更新
-        window.addEventListener('resize', updateVhVariable);
-        window.addEventListener('orientationchange', updateVhVariable);
-        
-        // 处理虚拟键盘
-        const chatContainer = document.querySelector('.chat-container');
-        const messageInput = document.querySelector('.message-input input');
-        
-        messageInput.addEventListener('focus', () => {
-            // 延迟以等待虚拟键盘完全显示
-            setTimeout(() => {
-                updateVhVariable();
-                scrollToBottom();
-            }, 300);
-        });
-        
-        messageInput.addEventListener('blur', () => {
-            // 键盘收起时调整视图
-            setTimeout(() => {
-                updateVhVariable();
-                scrollToBottom();
-            }, 300);
-        });
-        
-        // 加载页面完成后初始化
-        window.addEventListener('load', () => {
-            // 修复移动端滚动
-            updateVhVariable();
-            scrollToBottom();
-            
-            // 移动端浏览器地址栏处理
-            if ('virtualKeyboard' in navigator) {
-                navigator.virtualKeyboard.overlaysContent = true;
-            }
-            
-            // 添加额外的滚动监听
-            chatContainer.addEventListener('scroll', () => {
-                // 检测滚动位置
-                const isAtBottom = (chatContainer.scrollHeight - chatContainer.scrollTop - chatContainer.clientHeight) < 10;
-                
-                // 如果用户主动滚动到底部，记录这个状态
-                if (isAtBottom) {
-                    localStorage.setItem('chatAutoScroll', 'true');
-                } else {
-                    localStorage.setItem('chatAutoScroll', 'false');
+            if (chatContainerInner) {
+                try {
+                    // 立即滚动一次
+                    chatContainerInner.scrollTop = chatContainerInner.scrollHeight;
+                    
+                    // 使用setTimeout确保DOM更新后再次滚动
+                    setTimeout(() => {
+                        chatContainerInner.scrollTop = chatContainerInner.scrollHeight;
+                        
+                        // 使用scrollIntoView作为备选方法
+                        const messages = chatContainerInner.querySelectorAll('.message');
+                        if (messages.length > 0) {
+                            const lastMessage = messages[messages.length - 1];
+                            lastMessage.scrollIntoView({ behavior: 'auto', block: 'end' });
+                        }
+                        
+                        console.log('滚动到底部');
+                    }, 100);
+                    
+                    // 再次尝试滚动，应对可能的延迟渲染
+                    setTimeout(() => {
+                        chatContainerInner.scrollTop = chatContainerInner.scrollHeight;
+                    }, 300);
+                } catch (error) {
+                    console.error('滚动到底部时出错:', error);
                 }
-            });
-        });
-        
-        // 当消息容器发生变化时，根据用户滚动状态决定是否滚动到底部
-        const chatObserver = new MutationObserver(() => {
-            const shouldAutoScroll = localStorage.getItem('chatAutoScroll') !== 'false';
-            if (shouldAutoScroll) {
-                scrollToBottom();
             }
-        });
-        
-        // 启动观察
-        chatObserver.observe(document.getElementById('chatContainer'), { 
-            childList: true, 
-            subtree: true 
-        });
+        }
     </script>
 </body>
 </html> 
