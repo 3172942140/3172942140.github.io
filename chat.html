@@ -34,15 +34,184 @@
             padding: 20px;
             display: flex;
             flex-direction: column;
+            gap: 10px;
         }
 
+        /* 参与者列表样式 */
+        .chat-participants {
+            width: 100%;
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 10px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            align-items: center;
+            overflow-x: auto;
+            white-space: nowrap;
+            -webkit-overflow-scrolling: touch;
+            position: relative;
+            z-index: 2;
+        }
+
+        .participant {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 12px;
+            border-radius: 20px;
+            background: white;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            margin-right: 8px;
+            flex-shrink: 0;
+            position: relative;
+            cursor: pointer;
+        }
+
+        .participant-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            color: #fff;
+            background: linear-gradient(135deg, #3498db, #2ecc71);
+            flex-shrink: 0;
+        }
+
+        .participant.admin .participant-avatar {
+            background: url('/images/宇智波pdx.png') center/cover;
+        }
+
+        .participant-name {
+            color: #666;
+            font-size: 14px;
+        }
+
+        /* 提示框按钮样式 */
+        .tooltip-button {
+            margin-top: 8px;
+            padding: 6px 12px;
+            border: none;
+            border-radius: 15px;
+            background: linear-gradient(135deg, #3498db, #2ecc71);
+            color: white;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            width: auto;
+            min-width: 80px;
+        }
+
+        .tooltip-button:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            opacity: 0.9;
+        }
+
+        .participant-tooltip {
+            position: fixed;
+            transform: translate(-50%, 10px);
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            padding: 12px;
+            width: 160px;
+            z-index: 1000;
+            display: none;
+            animation: fadeIn 0.2s ease;
+            pointer-events: auto;
+        }
+
+        .participant-tooltip::before {
+            content: '';
+            position: absolute;
+            top: -6px;
+            left: 50%;
+            transform: translateX(-50%);
+            border-width: 0 6px 6px 6px;
+            border-style: solid;
+            border-color: transparent transparent white transparent;
+        }
+
+        /* 移除旧的hover事件样式 */
+        /* .participant:hover .participant-tooltip {
+            display: block;
+        } */
+
+        /* 添加新的显示类 */
+        .participant-tooltip.show {
+            display: block;
+        }
+
+        /* 添加JavaScript动态定位支持 */
+        .participant {
+            position: relative;
+        }
+
+        .tooltip-avatar {
+            width: 64px;
+            height: 64px;
+            border-radius: 50%;
+            margin: 0 auto 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            color: #fff;
+            background: linear-gradient(135deg, #3498db, #2ecc71);
+        }
+
+        .tooltip-avatar.admin {
+            background: url('/images/宇智波pdx.png') center/cover;
+        }
+
+        .tooltip-info {
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .tooltip-name {
+            font-size: 16px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .tooltip-email {
+            font-size: 14px;
+            color: #666;
+            word-break: break-all;
+            white-space: normal;
+        }
+
+        .tooltip-role {
+            font-size: 12px;
+            color: #fff;
+            background: linear-gradient(135deg, #3498db, #2ecc71);
+            padding: 2px 8px;
+            border-radius: 10px;
+            display: inline-block;
+        }
+
+        .tooltip-role.admin {
+            background: linear-gradient(135deg, #e74c3c, #c0392b);
+        }
+
+        /* 聊天容器样式 */
         .chat-container {
             width: 100%;
             background: #f8f9fa;
             border: 1px solid #e9ecef;
             border-radius: 8px;
             padding: 20px;
-            height: 600px; /* 固定高度 */
+            height: 500px;
             overflow-y: auto;
             margin-bottom: 10px;
             scrollbar-width: thin;
@@ -280,11 +449,11 @@
         @keyframes fadeIn {
             from {
                 opacity: 0;
-                transform: translateY(10px);
+                transform: translate(-50%, 0);
             }
             to {
                 opacity: 1;
-                transform: translateY(0);
+                transform: translate(-50%, 10px);
             }
         }
 
@@ -414,6 +583,18 @@
                 font-size: 12px;
             }
         }
+
+        /* 添加聊天状态样式 */
+        .chat-status {
+            padding: 10px;
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            text-align: center;
+            color: #666;
+            font-size: 14px;
+            border: 1px solid #e9ecef;
+        }
     </style>
 </head>
 <body>
@@ -431,7 +612,7 @@
                 <a href="/chat.html" class="active">聊天</a>
                 <a href="/message.html">留言</a>
                 <a href="/about.html">关于</a>
-            </div>
+    </div>
             <div class="auth-buttons">
                 <button class="btn-outline" id="loginBtn">登录</button>
                 <button class="btn-primary" id="registerBtn">注册</button>
@@ -442,20 +623,23 @@
     <div class="connection-status disconnected" id="connectionStatus">
         <span class="status-dot"></span>
         <span class="status-text">未连接</span>
-    </div>
+            </div>
 
     <main class="main-content">
         <div class="chat-wrapper">
             <div class="chat-section">
+                <div class="chat-participants">
+                    <!-- 参与者列表将在这里动态添加 -->
+            </div>
                 <div class="chat-container" id="chatContainer">
                     <!-- 消息将在这里动态添加 -->
                 </div>
-                <div class="message-input">
-                    <input type="text" id="messageInput" placeholder="输入消息...">
-                    <button onclick="sendMessage()">发送</button>
-                </div>
+            <div class="message-input">
+                <input type="text" id="messageInput" placeholder="输入消息...">
+                <button onclick="sendMessage()">发送</button>
             </div>
         </div>
+    </div>
     </main>
 
     <footer class="footer">
@@ -483,6 +667,297 @@
         const RECONNECT_DELAY = 2000; // 2秒
         let reconnectTimer = null;
         const MAX_CHAT_HISTORY = 100; // 最多保存100条消息
+
+        // 存储参与者信息的Set
+        const participants = new Set();
+
+        // 显示参与者列表
+        function displayParticipants() {
+            const participantsContainer = document.querySelector('.chat-participants');
+            participantsContainer.innerHTML = '';
+
+            const sortedParticipants = Array.from(participants)
+                .map(p => JSON.parse(p))
+                .sort((a, b) => {
+                    if (a.role === 'admin' && b.role !== 'admin') return -1;
+                    if (a.role !== 'admin' && b.role === 'admin') return 1;
+                    return a.name.localeCompare(b.name);
+                });
+
+            sortedParticipants.forEach(participant => {
+                const participantDiv = document.createElement('div');
+                participantDiv.className = `participant ${participant.role}`;
+
+                // 创建头像
+                const avatarDiv = document.createElement('div');
+                avatarDiv.className = 'participant-avatar';
+                if (participant.role === 'admin') {
+                    avatarDiv.style.backgroundImage = "url('/images/宇智波pdx.png')";
+                    avatarDiv.style.backgroundSize = 'cover';
+                } else {
+                    avatarDiv.textContent = participant.name.charAt(0);
+                }
+
+                // 创建名字
+                const nameSpan = document.createElement('span');
+                nameSpan.className = 'participant-name';
+                nameSpan.textContent = participant.name;
+
+                // 创建提示框
+                const tooltipDiv = document.createElement('div');
+                tooltipDiv.className = 'participant-tooltip';
+
+                // 创建提示框头像
+                const tooltipAvatar = document.createElement('div');
+                tooltipAvatar.className = `tooltip-avatar ${participant.role}`;
+                if (participant.role === 'admin') {
+                    tooltipAvatar.style.backgroundImage = "url('/images/宇智波pdx.png')";
+                    tooltipAvatar.style.backgroundSize = 'cover';
+                } else {
+                    tooltipAvatar.textContent = participant.name.charAt(0);
+                }
+
+                // 创建提示框信息区
+                const tooltipInfo = document.createElement('div');
+                tooltipInfo.className = 'tooltip-info';
+
+                // 添加名字
+                const tooltipName = document.createElement('div');
+                tooltipName.className = 'tooltip-name';
+                tooltipName.textContent = participant.name;
+
+                // 添加角色
+                const tooltipRole = document.createElement('div');
+                tooltipRole.className = `tooltip-role ${participant.role}`;
+                tooltipRole.textContent = participant.role === 'admin' ? '管理员' : '用户';
+
+                // 添加聊天按钮
+                const chatButton = document.createElement('button');
+                chatButton.className = 'tooltip-button';
+                chatButton.textContent = '发起私聊';
+                chatButton.onclick = (e) => {
+                    e.stopPropagation(); // 阻止事件冒泡
+                    startPrivateChat(participant);
+                };
+
+                // 组装提示框
+                tooltipInfo.appendChild(tooltipName);
+                tooltipInfo.appendChild(tooltipRole);
+                tooltipInfo.appendChild(chatButton);
+                tooltipDiv.appendChild(tooltipAvatar);
+                tooltipDiv.appendChild(tooltipInfo);
+
+                // 组装参与者元素
+                participantDiv.appendChild(avatarDiv);
+                participantDiv.appendChild(nameSpan);
+                participantDiv.appendChild(tooltipDiv);
+
+                // 添加鼠标事件处理
+                let tooltipTimeout;
+
+                participantDiv.addEventListener('mouseenter', (e) => {
+                    clearTimeout(tooltipTimeout);
+                    const rect = participantDiv.getBoundingClientRect();
+                    const tooltip = participantDiv.querySelector('.participant-tooltip');
+                    
+                    // 计算提示框位置
+                    const tooltipLeft = rect.left + (rect.width / 2);
+                    let tooltipTop = rect.bottom;
+
+                    // 检查是否会超出视窗底部
+                    const tooltipHeight = tooltip.offsetHeight;
+                    if (tooltipTop + tooltipHeight + 10 > window.innerHeight) {
+                        tooltipTop = rect.top - tooltipHeight - 10;
+                        tooltip.style.transform = 'translate(-50%, 0)';
+                    }
+
+                    tooltip.style.left = `${tooltipLeft}px`;
+                    tooltip.style.top = `${tooltipTop}px`;
+                    tooltip.classList.add('show');
+                });
+
+                participantDiv.addEventListener('mouseleave', (e) => {
+                    const tooltip = participantDiv.querySelector('.participant-tooltip');
+                    const relatedTarget = e.relatedTarget;
+                    
+                    // 检查鼠标是否移动到提示框上
+                    if (!tooltip.contains(relatedTarget)) {
+                        tooltipTimeout = setTimeout(() => {
+                            tooltip.classList.remove('show');
+                        }, 200); // 添加200ms延迟
+                    }
+                });
+
+                // 为提示框添加鼠标事件
+                tooltipDiv.addEventListener('mouseenter', () => {
+                    clearTimeout(tooltipTimeout);
+                });
+
+                tooltipDiv.addEventListener('mouseleave', (e) => {
+                    const relatedTarget = e.relatedTarget;
+                    if (!participantDiv.contains(relatedTarget)) {
+                        tooltipTimeout = setTimeout(() => {
+                            tooltipDiv.classList.remove('show');
+                        }, 200); // 添加200ms延迟
+                    }
+                });
+
+                participantsContainer.appendChild(participantDiv);
+            });
+        }
+
+        // 更新参与者列表
+        function updateParticipants(message) {
+            // 创建参与者对象
+            const participant = {
+                id: message.userId,
+                name: message.userName,
+                role: message.role
+            };
+
+            // 将参与者信息转换为字符串以便在Set中存储
+            const participantString = JSON.stringify(participant);
+
+            // 如果是新参与者，添加到Set中并更新显示
+            if (!participants.has(participantString)) {
+                participants.add(participantString);
+                displayParticipants();
+            }
+        }
+
+        // 修改displayMessage函数，添加参与者更新
+        function displayMessage(message, isNew = true) {
+            // 更新参与者列表
+            updateParticipants(message);
+            
+            const chatContainer = document.getElementById('chatContainer');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${message.userId === currentUser.id ? 'sent' : 'received'}`;
+
+            // 创建头像
+            const avatarDiv = document.createElement('div');
+            avatarDiv.className = 'message-avatar';
+            if (message.role === 'admin') {
+                avatarDiv.style.backgroundImage = "url('/images/宇智波pdx.png')";
+                avatarDiv.style.backgroundSize = 'cover';
+            } else {
+                avatarDiv.textContent = message.userName.charAt(0);
+            }
+
+            // 创建消息内容包装器
+            const contentWrapper = document.createElement('div');
+            contentWrapper.className = 'message-content-wrapper';
+            
+            // 创建发送者名称
+            const senderDiv = document.createElement('div');
+            senderDiv.className = 'message-sender';
+            senderDiv.textContent = message.userId === currentUser.id ? '我' : message.userName;
+            
+            // 创建消息内容
+            const contentDiv = document.createElement('div');
+            contentDiv.className = 'message-content';
+            contentDiv.textContent = message.content;
+            
+            // 创建时间戳
+            const timeDiv = document.createElement('div');
+            timeDiv.className = 'message-time';
+            timeDiv.textContent = new Date(message.timestamp).toLocaleTimeString();
+            
+            // 组装消息
+            contentWrapper.appendChild(senderDiv);
+            contentWrapper.appendChild(contentDiv);
+            contentWrapper.appendChild(timeDiv);
+            messageDiv.appendChild(avatarDiv);
+            messageDiv.appendChild(contentWrapper);
+            
+            // 添加到聊天容器
+            chatContainer.appendChild(messageDiv);
+            
+            // 滚动到底部
+            if (isNew) {
+                chatContainer.scrollTop = chatContainer.scrollHeight;
+            }
+        }
+
+        // 修改加载聊天记录函数
+        async function loadChatHistory() {
+            try {
+                if (!currentUser) return;
+                
+                let retryCount = 0;
+                const maxRetries = 3;
+                const retryDelay = 1000;
+
+                while (retryCount < maxRetries) {
+                    try {
+                        // 构建API URL
+                        let apiUrl = `${WORKER_URL}/api/chat/history?userId=${currentUser.id}`;
+                        
+                        if (currentChatType === 'private' && currentTargetUser) {
+                            apiUrl += `&channel=private&targetUserId=${currentTargetUser.id}`;
+                        } else {
+                            apiUrl += '&channel=public';
+                        }
+                        
+                        console.log('请求聊天记录:', apiUrl);
+                        const response = await fetch(apiUrl);
+                        
+                        if (response.ok) {
+                            const data = await response.json();
+                            
+                            if (data.success && data.history) {
+                                console.log(`成功加载 ${data.history.length} 条聊天记录`);
+                                const chatContainer = document.getElementById('chatContainer');
+                                chatContainer.innerHTML = '';
+                                
+                                // 清空并更新参与者列表
+                                participants.clear();
+                                if (currentChatType === 'private' && currentTargetUser) {
+                                    // 私聊只显示两个参与者
+                                    participants.add(JSON.stringify({
+                                        id: currentUser.id,
+                                        name: currentUser.name,
+                                        role: currentUser.role
+                                    }));
+                                    participants.add(JSON.stringify({
+                                        id: currentTargetUser.id,
+                                        name: currentTargetUser.name,
+                                        role: currentTargetUser.role
+                                    }));
+                                }
+                                
+                                // 显示历史消息
+                                data.history.forEach(message => {
+                                    displayMessage(message, false);
+                                });
+                                
+                                // 更新聊天状态
+                                updateChatStatus(currentChatType === 'private' ? 
+                                    `与 ${currentTargetUser.name} 的私聊` : '公共聊天室');
+                                
+                                // 滚动到底部
+                                chatContainer.scrollTop = chatContainer.scrollHeight;
+                                return;
+                            }
+                        }
+                        
+                        if (retryCount < maxRetries - 1) {
+                            await new Promise(resolve => setTimeout(resolve, retryDelay));
+                            retryCount++;
+                        }
+                    } catch (error) {
+                        console.error(`加载聊天记录失败 (尝试 ${retryCount + 1}/${maxRetries}):`, error);
+                        if (retryCount < maxRetries - 1) {
+                            await new Promise(resolve => setTimeout(resolve, retryDelay));
+                            retryCount++;
+                        }
+                    }
+                }
+            } catch (error) {
+                console.error('加载聊天记录时出错:', error);
+                updateChatStatus('加载聊天记录出错');
+            }
+        }
 
         // 检查用户登录状态
         function checkAuthStatus() {
@@ -516,8 +991,8 @@
                         loadChatHistory();
                     } else {
                         redirectToLogin();
-                    }
-                } catch (error) {
+                        }
+                    } catch (error) {
                     console.error('解析用户数据时出错:', error);
                     redirectToLogin();
                 }
@@ -621,84 +1096,37 @@
             window.location.href = '/login.html';
         }
 
-        // 从后端加载聊天记录
-        async function loadChatHistory() {
-            try {
-                if (!currentUser) return;
-                
-                let retryCount = 0;
-                const maxRetries = 3;
-                const retryDelay = 1000; // 1秒
-
-                while (retryCount < maxRetries) {
-                    try {
-                        console.log(`尝试从后端加载聊天记录 (尝试 ${retryCount + 1}/${maxRetries})`);
-                        
-                        // 构建API URL，包含当前用户ID、目标用户ID（如果是私聊）和聊天类型
-                        let apiUrl = `${WORKER_URL}/api/chat/history?userId=${currentUser.id}&channel=${currentChatType}`;
-                        if (currentChatType === 'private' && currentTargetUser) {
-                            apiUrl += `&targetUserId=${currentTargetUser.id}`;
-                        }
-                        
-                        const response = await fetch(apiUrl);
-                        
-                        if (response.ok) {
-                            const data = await response.json();
-                            
-                            if (data.success && data.history) {
-                                console.log(`成功加载 ${data.history.length} 条聊天记录`);
-                                const chatContainer = document.getElementById('chatContainer');
-                                chatContainer.innerHTML = ''; // 清空现有消息
-                                
-                                // 处理每条消息
-                                data.history.forEach(message => {
-                                    displayMessage(message, false); // false表示不保存到历史记录
-                                });
-                                
-                                // 滚动到最新消息
-                                chatContainer.scrollTop = chatContainer.scrollHeight;
-                                return;
-                            }
-                        }
-                        
-                        // 如果响应不成功，等待后重试
-                        if (retryCount < maxRetries - 1) {
-                            await new Promise(resolve => setTimeout(resolve, retryDelay));
-                            retryCount++;
-                        }
-                    } catch (error) {
-                        console.error(`从后端加载聊天记录失败 (尝试 ${retryCount + 1}/${maxRetries}):`, error);
-                        if (retryCount < maxRetries - 1) {
-                            await new Promise(resolve => setTimeout(resolve, retryDelay));
-                            retryCount++;
-                        }
-                    }
-                }
-            } catch (error) {
-                console.error('加载聊天记录时出错:', error);
-            }
-        }
-
         // 保存聊天记录到后端
         async function saveChatHistory(message) {
             try {
                 if (!currentUser) return;
                 
+                const chatData = {
+                    userId: currentUser.id,
+                    message: {
+                        ...message,
+                        channel: currentChatType
+                    }
+                };
+
+                // 如果是私聊，添加目标用户信息
+                if (currentChatType === 'private' && currentTargetUser) {
+                    chatData.message.targetUserId = currentTargetUser.id;
+                    chatData.message.targetUserName = currentTargetUser.name;
+                }
+
                 const response = await fetch(`${WORKER_URL}/api/chat/history`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({
-                        userId: currentUser.id,
-                        message: message
-                    })
+                    body: JSON.stringify(chatData)
                 });
-                
+
                 if (response.ok) {
                     console.log('消息已成功保存到后端');
                 } else {
-                    console.error('保存消息失败');
+                    console.error('保存消息失败:', await response.text());
                 }
             } catch (error) {
                 console.error('保存聊天记录时出错:', error);
@@ -906,6 +1334,41 @@
             publicBtn.classList.add('active');
         }
 
+        // 修改开始私聊函数
+        function startPrivateChat(participant) {
+            if (participant.id === currentUser.id) {
+                alert('不能和自己私聊');
+                return;
+            }
+
+            currentChatType = 'private';
+            currentTargetUser = participant;
+            loadChatHistory();
+        }
+
+        // 添加返回公共聊天函数
+        function backToPublicChat() {
+            currentChatType = 'public';
+            currentTargetUser = null;
+            loadChatHistory();
+        }
+
+        // 添加更新聊天状态的函数
+        function updateChatStatus(status) {
+            // 创建或获取状态显示元素
+            let statusElement = document.querySelector('.chat-status');
+            if (!statusElement) {
+                statusElement = document.createElement('div');
+                statusElement.className = 'chat-status';
+                const chatSection = document.querySelector('.chat-section');
+                chatSection.insertBefore(statusElement, document.querySelector('.chat-container'));
+            }
+            
+            // 更新状态文本
+            statusElement.textContent = status;
+        }
+
+        // 修改发送消息函数
         function sendMessage() {
             const input = document.getElementById('messageInput');
             const content = input.value.trim();
@@ -914,89 +1377,29 @@
             
             const message = {
                 type: 'message',
-                channel: 'public',
+                channel: currentChatType,
                 content: content,
                 userId: currentUser.id,
                 userName: currentUser.name,
                 role: currentRole,
-                timestamp: new Date().toISOString() // 添加时间戳
+                timestamp: new Date().toISOString()
             };
+
+            // 如果是私聊，添加目标用户信息
+            if (currentChatType === 'private' && currentTargetUser) {
+                message.targetUserId = currentTargetUser.id;
+                message.targetUserName = currentTargetUser.name;
+            }
             
             try {
-                // 先保存到本地
-                saveChatHistory(message);
-                
-                // 然后发送到WebSocket
+                // 发送到WebSocket
                 ws.send(JSON.stringify(message));
                 input.value = '';
+                
+                // 显示消息到UI
+                displayMessage(message, true);
             } catch (error) {
                 console.error('发送消息时出错:', error);
-            }
-        }
-
-        function displayMessage(message, shouldSave = true) {
-            const chatContainer = document.getElementById('chatContainer');
-            const messageDiv = document.createElement('div');
-            
-            // 设置消息的基本类
-            messageDiv.className = 'message';
-            
-            // 根据发送者添加sent或received类
-            if (message.userId === currentUser.id) {
-                messageDiv.classList.add('sent');
-            } else {
-                messageDiv.classList.add('received');
-            }
-
-            // 创建头像元素
-            const avatarDiv = document.createElement('div');
-            avatarDiv.className = 'message-avatar';
-            if (message.role === 'admin') {
-                avatarDiv.style.backgroundImage = "url('/images/宇智波pdx.png')";
-                avatarDiv.style.backgroundSize = 'cover';
-            } else {
-                avatarDiv.textContent = message.userName.charAt(0);
-            }
-
-            // 创建消息内容包装器
-            const contentWrapper = document.createElement('div');
-            contentWrapper.className = 'message-content-wrapper';
-            
-            // 创建发送者名称元素
-            const senderDiv = document.createElement('div');
-            senderDiv.className = 'message-sender';
-            senderDiv.textContent = message.userId === currentUser.id ? '我' : message.userName;
-            
-            // 创建消息内容元素
-            const contentDiv = document.createElement('div');
-            contentDiv.className = 'message-content';
-            contentDiv.textContent = message.content;
-            
-            // 添加时间戳
-            if (!message.timestamp) {
-                message.timestamp = new Date().toISOString();
-            }
-            const timeDiv = document.createElement('div');
-            timeDiv.className = 'message-time';
-            timeDiv.textContent = new Date(message.timestamp).toLocaleTimeString();
-            
-            // 组装消息
-            contentWrapper.appendChild(senderDiv);
-            contentWrapper.appendChild(contentDiv);
-            contentWrapper.appendChild(timeDiv);
-            
-            messageDiv.appendChild(avatarDiv);
-            messageDiv.appendChild(contentWrapper);
-            
-            // 添加到聊天容器
-            chatContainer.appendChild(messageDiv);
-            
-            // 滚动到最新消息
-            chatContainer.scrollTop = chatContainer.scrollHeight;
-            
-            // 保存到历史记录
-            if (shouldSave) {
-                saveChatHistory(message);
             }
         }
     </script>
