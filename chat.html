@@ -47,6 +47,7 @@
             padding: 20px;
             overflow-y: auto;
             min-height: 500px;
+            margin-bottom: 20px;
         }
 
         /* 消息样式 */
@@ -223,6 +224,7 @@
             background: #f8f9fa;
             border: 1px solid #e9ecef;
             border-radius: 8px;
+            margin-top: auto;
         }
 
         .message-input input {
@@ -1004,8 +1006,8 @@
             // 创建头像元素
             const avatarDiv = document.createElement('div');
             avatarDiv.className = 'message-avatar';
-            if (message.role === 'admin') {
-                // admin用户使用特定图片
+            if (message.role === 'admin' && message.userId === 1) {
+                // 只有 admin 角色且 userId 为 1 的用户（博主）才使用特定图片
                 avatarDiv.style.backgroundImage = "url('/images/宇智波pdx.png')";
                 avatarDiv.style.backgroundSize = 'cover';
             } else {
