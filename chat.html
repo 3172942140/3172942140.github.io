@@ -640,28 +640,6 @@
                 opacity: 1;
             }
         }
-
-        /* 添加在线状态样式 */
-        .participant {
-            position: relative;
-        }
-
-        .online-status {
-            position: absolute;
-            bottom: 0;
-            right: 0;
-            width: 10px;
-            height: 10px;
-            border-radius: 50%;
-            border: 2px solid white;
-            background-color: #ccc;
-            transition: background-color 0.3s ease;
-        }
-
-        .online-status.online {
-            background-color: #2ecc71;
-            box-shadow: 0 0 0 2px rgba(46, 204, 113, 0.2);
-        }
     </style>
 </head>
 <body>
@@ -738,52 +716,7 @@
         // 存储参与者信息的Set
         const participants = new Set();
 
-        // 添加在线用户管理
-        let onlineUsers = new Set();
-        const ONLINE_CHECK_INTERVAL = 10000; // 10秒检查一次
-
-        // 获取在线用户列表
-        async function fetchOnlineUsers() {
-            try {
-                const response = await fetch(`${WORKER_URL}/api/users/online`);
-                if (response.ok) {
-                    const data = await response.json();
-                    if (data.success && data.users) {
-                        // 更新在线用户集合
-                        onlineUsers.clear();
-                        data.users.forEach(user => {
-                            if (user.status === 'online') {
-                                onlineUsers.add(user.userId);
-                            }
-                        });
-                        // 更新显示
-                        updateOnlineStatus();
-                        console.log('在线用户列表:', Array.from(onlineUsers));
-                    }
-                }
-            } catch (error) {
-                console.error('获取在线用户列表失败:', error);
-            }
-        }
-
-        // 更新在线状态显示
-        function updateOnlineStatus() {
-            const participantElements = document.querySelectorAll('.participant');
-            participantElements.forEach(element => {
-                const userId = element.getAttribute('data-user-id');
-                // 不显示当前用户的在线状态
-                if (userId !== currentUser.id) {
-                    const statusDot = element.querySelector('.online-status');
-                    if (statusDot) {
-                        const isOnline = onlineUsers.has(userId);
-                        statusDot.classList.toggle('online', isOnline);
-                        console.log(`用户 ${userId} 在线状态:`, isOnline);
-                    }
-                }
-            });
-        }
-
-        // 修改 displayParticipants 函数，添加在线状态指示器
+        // 显示参与者列表
         function displayParticipants() {
             const participantsContainer = document.querySelector('.chat-participants');
             participantsContainer.innerHTML = '';
@@ -799,7 +732,6 @@
             sortedParticipants.forEach(participant => {
                 const participantDiv = document.createElement('div');
                 participantDiv.className = `participant ${participant.role}`;
-                participantDiv.setAttribute('data-user-id', participant.id);
 
                 // 创建头像
                 const avatarDiv = document.createElement('div');
@@ -809,17 +741,6 @@
                     avatarDiv.style.backgroundSize = 'cover';
                 } else {
                     avatarDiv.textContent = participant.name.charAt(0);
-                }
-
-                // 只为其他用户添加在线状态指示器
-                if (participant.id !== currentUser.id) {
-                    const statusDot = document.createElement('div');
-                    statusDot.className = 'online-status';
-                    const isOnline = onlineUsers.has(participant.id);
-                    if (isOnline) {
-                        statusDot.classList.add('online');
-                    }
-                    participantDiv.appendChild(statusDot);
                 }
 
                 // 创建名字
@@ -850,20 +771,17 @@
                 tooltipName.className = 'tooltip-name';
                 tooltipName.textContent = participant.name;
 
-                // 添加角色和在线状态（只为其他用户显示）
+                // 添加角色
                 const tooltipRole = document.createElement('div');
                 tooltipRole.className = `tooltip-role ${participant.role}`;
                 tooltipRole.textContent = participant.role === 'admin' ? '管理员' : '用户';
-                if (participant.id !== currentUser.id) {
-                    tooltipRole.textContent += onlineUsers.has(participant.id) ? ' (在线)' : ' (离线)';
-                }
 
                 // 添加聊天按钮
                 const chatButton = document.createElement('button');
                 chatButton.className = 'tooltip-button';
                 chatButton.textContent = '发起私聊';
                 chatButton.onclick = (e) => {
-                    e.stopPropagation();
+                    e.stopPropagation(); // 阻止事件冒泡
                     startPrivateChat(participant);
                 };
 
@@ -887,9 +805,11 @@
                     const rect = participantDiv.getBoundingClientRect();
                     const tooltip = participantDiv.querySelector('.participant-tooltip');
                     
+                    // 计算提示框位置
                     const tooltipLeft = rect.left + (rect.width / 2);
                     let tooltipTop = rect.bottom;
 
+                    // 检查是否会超出视窗底部
                     const tooltipHeight = tooltip.offsetHeight;
                     if (tooltipTop + tooltipHeight + 10 > window.innerHeight) {
                         tooltipTop = rect.top - tooltipHeight - 10;
@@ -905,13 +825,15 @@
                     const tooltip = participantDiv.querySelector('.participant-tooltip');
                     const relatedTarget = e.relatedTarget;
                     
+                    // 检查鼠标是否移动到提示框上
                     if (!tooltip.contains(relatedTarget)) {
                         tooltipTimeout = setTimeout(() => {
                             tooltip.classList.remove('show');
-                        }, 200);
+                        }, 200); // 添加200ms延迟
                     }
                 });
 
+                // 为提示框添加鼠标事件
                 tooltipDiv.addEventListener('mouseenter', () => {
                     clearTimeout(tooltipTimeout);
                 });
@@ -921,7 +843,7 @@
                     if (!participantDiv.contains(relatedTarget)) {
                         tooltipTimeout = setTimeout(() => {
                             tooltipDiv.classList.remove('show');
-                        }, 200);
+                        }, 200); // 添加200ms延迟
                     }
                 });
 
@@ -1211,16 +1133,49 @@
                     }
                 });
             }
-
-            // 添加在线状态检查
-            fetchOnlineUsers(); // 立即检查一次
-            setInterval(fetchOnlineUsers, ONLINE_CHECK_INTERVAL); // 定期检查
         });
 
         function redirectToLogin() {
             // 保存当前页面URL，以便登录后返回
             localStorage.setItem('redirectUrl', window.location.href);
             window.location.href = '/login.html';
+        }
+
+        // 保存聊天记录到后端
+        async function saveChatHistory(message) {
+            try {
+                if (!currentUser) return;
+                
+                const chatData = {
+                    userId: currentUser.id,
+                    message: {
+                        ...message,
+                        channel: currentChatType
+                    }
+                };
+
+                // 如果是私聊，添加目标用户信息
+                if (currentChatType === 'private' && currentTargetUser) {
+                    chatData.message.targetUserId = currentTargetUser.id;
+                    chatData.message.targetUserName = currentTargetUser.name;
+                }
+
+                const response = await fetch(`${WORKER_URL}/api/chat/history`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(chatData)
+                });
+
+                if (response.ok) {
+                    console.log('消息已成功保存到后端');
+                } else {
+                    console.error('保存消息失败:', await response.text());
+                }
+            } catch (error) {
+                console.error('保存聊天记录时出错:', error);
+            }
         }
 
         // 清除聊天记录
@@ -1381,35 +1336,20 @@
                             const shouldDisplay = 
                                 // 公共消息
                                 (message.channel === 'public' && currentChatType === 'public') ||
-                                // 私聊消息 - 当前用户是发送者或接收者，且在正确的聊天窗口中
-                                (message.channel === 'private' && currentChatType === 'private' && (
-                                    // 当前用户是发送者，且正在与接收者聊天
+                                // 私聊消息 - 当前用户是发送者或接收者
+                                (message.channel === 'private' && (
+                                    // 当前用户是发送者且正在与接收者聊天
                                     (message.userId === currentUser.id && 
                                      currentTargetUser && 
                                      message.targetUserId === currentTargetUser.id) ||
-                                    // 当前用户是接收者，且正在与发送者聊天
+                                    // 当前用户是接收者且正在与发送者聊天
                                     (message.targetUserId === currentUser.id && 
                                      currentTargetUser && 
-                                     message.userId === currentTargetUser.id) ||
-                                    // 新增：确保接收到的私聊消息在正确的聊天窗口显示
-                                    (currentTargetUser && (
-                                        (message.userId === currentTargetUser.id && message.targetUserId === currentUser.id) ||
-                                        (message.targetUserId === currentTargetUser.id && message.userId === currentUser.id)
-                                    ))
+                                     message.userId === currentTargetUser.id)
                                 ));
 
-                            console.log('消息显示条件:', {
-                                isPrivateChat: message.channel === 'private',
-                                currentChatType,
-                                messageUserId: message.userId,
-                                currentUserId: currentUser.id,
-                                targetUserId: message.targetUserId,
-                                currentTargetUserId: currentTargetUser?.id,
-                                shouldDisplay
-                            });
-
                             if (shouldDisplay) {
-                                displayMessage(message);
+                        displayMessage(message);
                                 // 如果是私聊消息，确保参与者列表包含发送者和接收者
                                 if (message.channel === 'private') {
                                     const sender = {
@@ -1427,9 +1367,10 @@
                                     displayParticipants();
                                 }
                             } else if (message.channel === 'private' && 
-                                     ((message.targetUserId === currentUser.id && message.userId !== currentTargetUser?.id) ||
-                                      (message.userId === currentUser.id && message.targetUserId !== currentTargetUser?.id))) {
-                                // 如果是私聊消息，但不在当前聊天窗口中，显示通知
+                                     message.targetUserId === currentUser.id && 
+                                     (!currentTargetUser || message.userId !== currentTargetUser.id)) {
+                                // 如果是发给当前用户的新私聊消息，但当前不在对应的聊天窗口
+                                // 可以添加一个通知或提示
                                 showNewMessageNotification(message);
                             }
                         }
@@ -1540,11 +1481,11 @@
             }
             
             try {
-                // 发送到WebSocket，后端会自动保存消息
+                // 发送到WebSocket
                 ws.send(JSON.stringify(message));
                 input.value = '';
                 
-                // 显示消息到UI，但不保存（因为WebSocket服务器会处理保存）
+                // 显示消息到UI
                 displayMessage(message, true);
             } catch (error) {
                 console.error('发送消息时出错:', error);
