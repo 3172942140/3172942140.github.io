@@ -662,6 +662,150 @@
         .participant-avatar {
             position: relative;
         }
+
+        /* 添加图片上传和表情包样式 */
+        .message-input {
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .input-controls {
+            display: flex;
+            gap: 12px;
+            width: 100%;
+        }
+
+        .message-tools {
+            display: flex;
+            gap: 8px;
+            padding: 4px 0;
+        }
+
+        .tool-button {
+            padding: 6px 12px;
+            border: none;
+            border-radius: 4px;
+            background: #f0f2f5;
+            color: #666;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            transition: all 0.2s ease;
+        }
+
+        .tool-button:hover {
+            background: #e4e6e9;
+        }
+
+        .tool-button i {
+            font-size: 16px;
+        }
+
+        /* 表情包选择器样式 */
+        .emoji-picker {
+            position: absolute;
+            bottom: 100%;
+            left: 0;
+            width: 320px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
+            padding: 12px;
+            display: none;
+            z-index: 1000;
+        }
+
+        .emoji-tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 12px;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 8px;
+        }
+
+        .emoji-tab {
+            padding: 6px 12px;
+            border: none;
+            background: none;
+            color: #666;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s ease;
+        }
+
+        .emoji-tab:hover {
+            color: #1890ff;
+        }
+
+        .emoji-tab.active {
+            color: #1890ff;
+            font-weight: 500;
+        }
+
+        .emoji-content {
+            position: relative;
+            height: 300px;
+            overflow-y: auto;
+        }
+
+        .emoji-grid {
+            display: none;
+            grid-template-columns: repeat(8, 1fr);
+            gap: 8px;
+            padding: 8px;
+        }
+
+        .emoji-grid.active {
+            display: grid;
+        }
+
+        .emoji-item {
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: all 0.2s ease;
+            font-size: 20px;
+        }
+
+        .emoji-item:hover {
+            background: #f0f2f5;
+        }
+
+        .emoji-loading {
+            text-align: center;
+            padding: 20px;
+            color: #999;
+        }
+
+        /* 上传进度条样式 */
+        .upload-progress {
+            width: 100%;
+            height: 4px;
+            background: #f0f2f5;
+            border-radius: 2px;
+            overflow: hidden;
+            display: none;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(135deg, #3498db, #2ecc71);
+            width: 0;
+            transition: width 0.3s ease;
+        }
+
+        .upload-preview {
+            max-width: 100px;
+            max-height: 100px;
+            object-fit: cover;
+            border-radius: 4px;
+            display: none;
+        }
     </style>
 </head>
 <body>
@@ -690,7 +834,7 @@
     <div class="connection-status disconnected" id="connectionStatus">
         <span class="status-dot"></span>
         <span class="status-text">未连接</span>
-            </div>
+    </div>
 
     <main class="main-content">
         <div class="chat-wrapper">
@@ -700,12 +844,43 @@
             </div>
                 <div class="chat-container" id="chatContainer">
                     <!-- 消息将在这里动态添加 -->
-                </div>
+        </div>
             <div class="message-input">
+                <div class="message-tools">
+                    <div style="position: relative;">
+                        <button class="tool-button" id="emojiButton" onclick="toggleEmojiPicker()">
+                            <i class="fas fa-smile"></i>
+                            表情
+                        </button>
+                        <div class="emoji-picker">
+                            <div class="emoji-tabs">
+                                <button class="emoji-tab active" data-tab="emoji">表情</button>
+                                <button class="emoji-tab" data-tab="uploaded" style="opacity: 0.5; cursor: not-allowed;" title="功能开发中">已上传</button>
+                            </div>
+                            <div class="emoji-content">
+                                <div class="emoji-grid active" id="emojiGrid"></div>
+                                <div class="emoji-grid" id="uploadedGrid">
+                                    <div class="emoji-loading">功能开发中...</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <button class="tool-button" onclick="triggerImageUpload()">
+                        <i class="fas fa-image"></i>
+                        图片
+                    </button>
+                    <input type="file" id="imageUpload" accept="image/*" style="display: none" onchange="handleImageUpload(event)">
+                    <div class="upload-progress">
+                        <div class="progress-bar"></div>
+                    </div>
+                    <img class="upload-preview" id="imagePreview">
+                </div>
+                <div class="input-controls">
                 <input type="text" id="messageInput" placeholder="输入消息...">
                 <button onclick="sendMessage()">发送</button>
             </div>
         </div>
+    </div>
     </div>
     </main>
 
@@ -740,6 +915,10 @@
 
         // 添加在线用户管理
         let onlineUsers = new Map();
+
+        // 添加新的全局变量
+        let emojiList = new Set(); // 存储所有表情包URL
+        let isEmojiPickerVisible = false;
 
         // 修改显示参与者函数，添加在线状态显示
         function displayParticipants() {
@@ -995,7 +1174,32 @@
             // 创建消息内容
             const contentDiv = document.createElement('div');
             contentDiv.className = 'message-content';
-            contentDiv.textContent = message.content;
+
+            // 处理消息内容
+            if (message.messageType === 'image') {
+                // 如果消息内容已经是完整的img标签
+                if (message.content.startsWith('<img')) {
+                    contentDiv.innerHTML = message.content;
+                } else {
+                    // 如果消息内容只是URL
+                    const img = document.createElement('img');
+                    // 添加baseURL
+                    img.src = message.content.startsWith('http') ? message.content : `https://api.szhaovo.cn${message.content}`;
+                    img.className = 'chat-image';
+                    img.alt = '聊天图片';
+                    contentDiv.appendChild(img);
+                }
+                // 为所有图片添加样式
+                const images = contentDiv.getElementsByTagName('img');
+                Array.from(images).forEach(img => {
+                    img.style.maxWidth = '200px';
+                    img.style.maxHeight = '200px';
+                    img.style.borderRadius = '4px';
+                    img.style.objectFit = 'contain';
+                });
+            } else {
+                contentDiv.textContent = message.content;
+            }
             
             // 创建时间戳
             const timeDiv = document.createElement('div');
@@ -1065,8 +1269,16 @@
                                     }));
                                 }
                                 
-                                // 显示历史消息
+                                // 处理历史消息
                                 data.history.forEach(message => {
+                                    // 检查是否是图片URL格式
+                                    if (message.content.startsWith('/api/files/') || message.content.includes('/api/files/')) {
+                                        message.messageType = 'image';
+                                        // 如果是相对路径，添加baseURL
+                                        if (message.content.startsWith('/')) {
+                                            message.content = `https://api.szhaovo.cn${message.content}`;
+                                        }
+                                    }
                                     displayMessage(message, false);
                                 });
                                 
@@ -1430,6 +1642,15 @@
                         
                         // 处理不同类型的消息
                         if (message.type === 'message') {
+                            // 检查是否是图片URL格式
+                            if (message.content.startsWith('/api/files/') || message.content.includes('/api/files/')) {
+                                message.messageType = 'image';
+                                // 如果是相对路径，添加baseURL
+                                if (message.content.startsWith('/')) {
+                                    message.content = `https://api.szhaovo.cn${message.content}`;
+                                }
+                            }
+
                             // 检查是否应该显示这条消息
                             const shouldDisplay = 
                                 // 公共消息，但不显示自己发送的消息
@@ -1672,6 +1893,350 @@
             }
         `;
         document.head.appendChild(styleSheet);
+
+        // 切换表情包选择器显示状态
+        function toggleEmojiPicker() {
+            const picker = document.querySelector('.emoji-picker');
+            const isVisible = picker.style.display === 'block';
+            
+            if (!isVisible) {
+                picker.style.display = 'block';
+                if (!picker.dataset.initialized) {
+                    initializeEmojiTabs();
+                    loadStandardEmojis();
+                    picker.dataset.initialized = 'true';
+                }
+            } else {
+                picker.style.display = 'none';
+            }
+        }
+
+        function initializeEmojiTabs() {
+            const tabs = document.querySelectorAll('.emoji-tab:not([style*="not-allowed"])');
+            tabs.forEach(tab => {
+                tab.addEventListener('click', () => {
+                    const tabName = tab.dataset.tab;
+                    
+                    // Update active tab
+                    tabs.forEach(t => t.classList.remove('active'));
+                    tab.classList.add('active');
+                    
+                    // Update active content
+                    const grids = document.querySelectorAll('.emoji-grid');
+                    grids.forEach(grid => {
+                        if (grid.id === `${tabName}Grid`) {
+                            grid.classList.add('active');
+                        } else {
+                            grid.classList.remove('active');
+                        }
+                    });
+                });
+            });
+        }
+
+        function loadStandardEmojis() {
+            const emojiGrid = document.getElementById('emojiGrid');
+            emojiGrid.innerHTML = ''; // 清空现有内容
+            
+            const standardEmojis = [
+                '😀', '😃', '😄', '😁', '😅', '😂', '🤣', '😊', 
+                '😇', '🙂', '🙃', '😉', '😌', '😍', '🥰', '😘',
+                '😗', '😙', '😚', '😋', '😛', '😝', '😜', '🤪',
+                '🤨', '🧐', '🤓', '😎', '🤩', '🥳', '😏', '😒',
+                '😞', '😔', '😟', '😕', '🙁', '☹️', '😣', '😖',
+                '😫', '😩', '🥺', '😢', '😭', '😤', '😠', '😡',
+                '🤬', '🤯', '😳', '🥵', '🥶', '😱', '😨', '😰',
+                '😥', '😓', '🤗', '🤔', '🤭', '🤫', '🤥', '😶',
+                '😐', '😑', '😬', '🙄', '😯', '😦', '😧', '😮',
+                '😲', '🥱', '😴', '🤤', '😪', '😵', '🤐', '🥴',
+                '👋', '🤚', '✋', '🖐️', '👌', '🤌', '🤏', '✌️',
+                '🤞', '🤟', '🤘', '🤙', '👈', '👉', '👆', '🖕',
+                '👇', '☝️', '👍', '👎', '✊', '👊', '🤛', '🤜',
+                '👏', '🙌', '👐', '🤲', '🤝', '🙏', '✍️', '💅',
+                '🤳', '💪', '🦾', '🦿', '🦵', '🦶', '👂', '🦻',
+                '👃', '🧠', '🫀', '🫁', '🦷', '🦴', '👀', '👁️'
+            ];
+            
+            standardEmojis.forEach(emoji => {
+                const emojiItem = document.createElement('div');
+                emojiItem.className = 'emoji-item';
+                emojiItem.textContent = emoji;
+                emojiItem.onclick = () => insertEmoji(emoji);
+                emojiGrid.appendChild(emojiItem);
+            });
+        }
+
+        function insertEmoji(emoji) {
+            const messageInput = document.getElementById('messageInput');
+            const cursorPos = messageInput.selectionStart;
+            const textBefore = messageInput.value.substring(0, cursorPos);
+            const textAfter = messageInput.value.substring(cursorPos);
+            
+            messageInput.value = textBefore + emoji + textAfter;
+            messageInput.focus();
+            messageInput.selectionStart = messageInput.selectionEnd = cursorPos + emoji.length;
+            
+            // Hide emoji picker after selection
+            document.querySelector('.emoji-picker').style.display = 'none';
+        }
+
+        // Close emoji picker when clicking outside
+        document.addEventListener('click', (e) => {
+            const picker = document.querySelector('.emoji-picker');
+            const emojiButton = document.getElementById('emojiButton');
+            
+            if (picker && (!picker.contains(e.target) && (!emojiButton || !emojiButton.contains(e.target)))) {
+                picker.style.display = 'none';
+            }
+        });
+
+        // 触发图片上传
+        function triggerImageUpload() {
+            document.getElementById('imageUpload').click();
+        }
+
+        // 修改图片压缩函数 - 压缩到5KB以下
+        async function compressImage(file) {
+            // 创建一个 FileReader 来读取文件
+            const reader = new FileReader();
+            
+            // 将文件读取为 Data URL
+            return new Promise((resolve, reject) => {
+                reader.onload = async (e) => {
+                    try {
+                        // 创建图片对象
+                        const img = new Image();
+                        img.src = e.target.result;
+                        
+                        await new Promise((resolve) => {
+                            img.onload = resolve;
+                        });
+
+                        // 创建 canvas
+                        const canvas = document.createElement('canvas');
+                        let { width, height } = img;
+
+                        // 计算缩放比例 - 先尝试缩小尺寸
+                        const MAX_SIZE = 200; // 缩小到200px
+                        if (width > height) {
+                            if (width > MAX_SIZE) {
+                                height = Math.round((height * MAX_SIZE) / width);
+                                width = MAX_SIZE;
+                            }
+            } else {
+                            if (height > MAX_SIZE) {
+                                width = Math.round((width * MAX_SIZE) / height);
+                                height = MAX_SIZE;
+                            }
+                        }
+
+                        // 设置 canvas 尺寸
+                        canvas.width = width;
+                        canvas.height = height;
+
+                        // 绘制图片
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, width, height);
+
+                        // 压缩过程 - 目标5KB
+                        let quality = 0.5; // 开始使用较低质量
+                        let compressedFile;
+                        let dataUrl;
+                        const TARGET_SIZE = 5 * 1024; // 5KB
+
+                        do {
+                            dataUrl = canvas.toDataURL('image/jpeg', quality);
+                            
+                            // 将 base64 转换为 Blob
+                            const byteString = atob(dataUrl.split(',')[1]);
+                            const mimeString = dataUrl.split(',')[0].split(':')[1].split(';')[0];
+                            const ab = new ArrayBuffer(byteString.length);
+                            const ia = new Uint8Array(ab);
+                            
+                            for (let i = 0; i < byteString.length; i++) {
+                                ia[i] = byteString.charCodeAt(i);
+                            }
+                            
+                            compressedFile = new File([ab], file.name, {
+                                type: mimeString,
+                                lastModified: Date.now()
+                            });
+
+                            // 检查文件大小
+                            if (compressedFile.size > TARGET_SIZE) {
+                                // 如果还是太大，降低质量
+                                quality -= 0.1;
+                                // 如果质量已经很低但文件仍然太大，尝试进一步缩小尺寸
+                                if (quality < 0.1) {
+                                    width = Math.round(width * 0.8);
+                                    height = Math.round(height * 0.8);
+                                    canvas.width = width;
+                                    canvas.height = height;
+                                    ctx.drawImage(img, 0, 0, width, height);
+                                    quality = 0.5; // 重置质量开始新一轮压缩
+                                }
+                            } else {
+                                // 达到目标大小
+                                break;
+                            }
+
+                            // 如果尺寸已经非常小但仍然太大，使用最后的压缩结果
+                            if (width < 50 || height < 50) {
+                                console.log('已达到最小尺寸，使用当前压缩结果');
+                                break;
+                            }
+
+                        } while (true);
+
+                        console.log('压缩前大小:', file.size / 1024, 'KB');
+                        console.log('压缩后大小:', compressedFile.size / 1024, 'KB');
+                        console.log('压缩质量:', quality, '尺寸:', width, 'x', height);
+
+                        resolve(compressedFile);
+                    } catch (error) {
+                        console.error('压缩过程出错:', error);
+                        reject(error);
+                    }
+                };
+
+                reader.onerror = (error) => {
+                    console.error('读取文件失败:', error);
+                    reject(error);
+                };
+
+                reader.readAsDataURL(file);
+            });
+        }
+
+        // 修改处理图片上传函数
+        async function handleImageUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            // 检查文件类型
+            if (!file.type.startsWith('image/')) {
+                alert('请选择图片文件');
+                return;
+            }
+
+            // 检查原始图片大小
+            if (file.size > 5 * 1024 * 1024) {
+                alert('图片大小不能超过5MB');
+                return;
+            }
+
+            try {
+                // 显示进度条和预览
+                const preview = document.getElementById('imagePreview');
+                preview.style.display = 'block';
+                preview.src = URL.createObjectURL(file);
+                
+                const progressBar = document.querySelector('.progress-bar');
+                const progressContainer = document.querySelector('.upload-progress');
+                progressContainer.style.display = 'block';
+                progressBar.style.width = '10%'; // 开始压缩
+                
+                // 压缩所有图片到5KB以下
+                console.log('开始压缩图片...');
+                const compressedFile = await compressImage(file);
+                progressBar.style.width = '50%'; // 压缩完成
+                
+                console.log('压缩完成，开始上传');
+                
+                // 上传压缩后的图片
+                await uploadCompressedImage(compressedFile, progressBar);
+            } catch (error) {
+                console.error('处理图片失败:', error);
+                alert('处理图片失败，请重试');
+                
+                // 清理预览和进度条
+                const preview = document.getElementById('imagePreview');
+                preview.style.display = 'none';
+                const progressContainer = document.querySelector('.upload-progress');
+                progressContainer.style.display = 'none';
+                document.getElementById('imageUpload').value = '';
+            }
+        }
+
+        // 提取上传压缩图片逻辑到单独的函数
+        async function uploadCompressedImage(file, progressBar) {
+            try {
+                const formData = new FormData();
+                formData.append('file', file);
+
+                const response = await fetch('https://api.szhaovo.cn/api/upload', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    },
+                    body: formData
+                });
+
+                if (progressBar) {
+                    progressBar.style.width = '100%'; // 上传完成
+                }
+
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.success) {
+                        // 发送图片消息，添加baseURL
+                        const fullUrl = `https://api.szhaovo.cn${data.url}`;
+                        sendImageMessage(fullUrl);
+                        // 将新上传的图片添加到表情包列表
+                        emojiList.add(fullUrl);
+                        // 如果表情选择器是打开的，刷新显示
+                        if (isEmojiPickerVisible) {
+                            loadStandardEmojis();
+                        }
+                    }
+                } else {
+                    throw new Error('上传失败: ' + await response.text());
+                }
+            } catch (error) {
+                console.error('上传图片失败:', error);
+                alert('上传图片失败: ' + error.message);
+                throw error;
+            } finally {
+                // 清理预览和进度条
+                setTimeout(() => {
+                    const preview = document.getElementById('imagePreview');
+                    if (preview) preview.style.display = 'none';
+                    const progressContainer = document.querySelector('.upload-progress');
+                    if (progressContainer) progressContainer.style.display = 'none';
+                    const progressBar = document.querySelector('.progress-bar');
+                    if (progressBar) progressBar.style.width = '0';
+                    document.getElementById('imageUpload').value = ''; // 清空input
+                }, 1000);
+            }
+        }
+
+        // 修改发送图片消息函数
+        function sendImageMessage(imageUrl) {
+            if (!ws) return;
+
+            const message = {
+                type: 'message',
+                channel: currentChatType,
+                content: imageUrl,  // 只发送URL，不发送HTML标签
+                userId: currentUser.id,
+                userName: currentUser.name,
+                role: currentRole,
+                timestamp: new Date().toISOString(),
+                messageType: 'image'
+            };
+
+            if (currentChatType === 'private' && currentTargetUser) {
+                message.targetUserId = currentTargetUser.id;
+                message.targetUserName = currentTargetUser.name;
+            }
+
+            try {
+                ws.send(JSON.stringify(message));
+                displayMessage(message, true);
+            } catch (error) {
+                console.error('发送图片消息失败:', error);
+            }
+        }
     </script>
 </body>
 </html> 
