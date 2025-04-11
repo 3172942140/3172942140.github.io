@@ -641,72 +641,16 @@
             }
         }
 
-        /* 添加消息状态图标样式 */
+        /* 添加消息已读状态相关的样式 */
         .message-status {
-            display: inline-flex;
-            align-items: center;
-            margin-left: 4px;
-            font-size: 12px;
+            font-size: 10px;
             color: #999;
+            margin-top: 2px;
         }
 
-        .message-status i {
-            font-size: 14px;
-            margin-right: 2px;
-        }
-
-        .message-status.pending {
-            color: #999;
-        }
-
-        .message-status.sent {
-            color: #3498db;
-        }
-
-        .message-status.offline {
-            color: #e74c3c;
-        }
-
-        /* 添加离线提示样式 */
-        .offline-notice {
-            text-align: center;
-            padding: 8px;
-            margin: 10px 0;
-            background-color: #fff3cd;
-            color: #856404;
-            border-radius: 4px;
-            font-size: 12px;
-            animation: fadeIn 0.3s ease;
-        }
-
-        /* 添加未读消息徽章样式 */
-        .unread-badge {
-            position: fixed;
-            top: 70px;
-            right: 10px;
-            background: #e74c3c;
-            color: white;
-            border-radius: 50%;
-            width: 20px;
-            height: 20px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 12px;
-            font-weight: bold;
-            z-index: 1002;
-        }
-
-        .participant.online::after {
-            content: '';
-            position: absolute;
-            right: 5px;
-            top: 5px;
-            width: 8px;
-            height: 8px;
-            background: #2ecc71;
-            border-radius: 50%;
-            border: 2px solid white;
+        .message.sent .message-status {
+            text-align: right;
+            padding-right: 4px;
         }
     </style>
 </head>
@@ -946,7 +890,7 @@
             const chatContainer = document.getElementById('chatContainer');
             const messageDiv = document.createElement('div');
             messageDiv.className = `message ${message.userId === currentUser.id ? 'sent' : 'received'}`;
-            messageDiv.dataset.messageId = message.timestamp; // 使用timestamp作为messageId
+            messageDiv.dataset.timestamp = message.timestamp; // 保存时间戳用于标记已读
 
             // 创建头像
             const avatarDiv = document.createElement('div');
@@ -972,55 +916,35 @@
             contentDiv.className = 'message-content';
             contentDiv.textContent = message.content;
             
-            // 创建时间和状态包装器
-            const timeStatusWrapper = document.createElement('div');
-            timeStatusWrapper.className = 'time-status-wrapper';
-            timeStatusWrapper.style.display = 'flex';
-            timeStatusWrapper.style.alignItems = 'center';
-            timeStatusWrapper.style.justifyContent = message.userId === currentUser.id ? 'flex-end' : 'flex-start';
-            timeStatusWrapper.style.gap = '4px';
-            
             // 创建时间戳
             const timeDiv = document.createElement('div');
             timeDiv.className = 'message-time';
             timeDiv.textContent = new Date(message.timestamp).toLocaleTimeString();
-            
-            // 如果是发送的消息，添加状态图标
-            if (message.userId === currentUser.id) {
+
+            // 添加已读状态显示（仅对发送的私聊消息显示）
+            if (message.userId === currentUser.id && message.channel === 'private') {
                 const statusDiv = document.createElement('div');
-                if (message.status === 'delivered') {
-                    statusDiv.className = 'message-status sent';
-                    statusDiv.innerHTML = '✓✓';
-                } else if (message.status === 'offline') {
-                    statusDiv.className = 'message-status offline';
-                    statusDiv.innerHTML = '✓';
-                } else {
-                    statusDiv.className = 'message-status pending';
-                    statusDiv.innerHTML = '✓';
+                statusDiv.className = 'message-status';
+                statusDiv.textContent = message.readStatus === 'read' ? '已读' : '未读';
+                if (message.readAt) {
+                    statusDiv.title = `读取时间: ${new Date(message.readAt).toLocaleString()}`;
                 }
-                timeStatusWrapper.appendChild(timeDiv);
-                timeStatusWrapper.appendChild(statusDiv);
-            } else {
-                timeStatusWrapper.appendChild(timeDiv);
+                contentWrapper.appendChild(statusDiv);
             }
             
             // 组装消息
             contentWrapper.appendChild(senderDiv);
             contentWrapper.appendChild(contentDiv);
-            contentWrapper.appendChild(timeStatusWrapper);
+            contentWrapper.appendChild(timeDiv);
             messageDiv.appendChild(avatarDiv);
             messageDiv.appendChild(contentWrapper);
             
             // 添加到聊天容器
             chatContainer.appendChild(messageDiv);
             
-            // 如果是新消息且是私聊，添加离线提示
-            if (isNew && message.channel === 'private' && message.userId === currentUser.id) {
-                const offlineNotice = document.createElement('div');
-                offlineNotice.className = 'offline-notice';
-                offlineNotice.textContent = '对方当前离线，消息将在上线后送达';
-                offlineNotice.style.display = 'none'; // 默认隐藏，等待WebSocket响应
-                chatContainer.appendChild(offlineNotice);
+            // 如果是新收到的消息且不是自己发送的，标记为已读
+            if (isNew && message.userId !== currentUser.id) {
+                markMessageAsRead(message.timestamp);
             }
             
             // 滚动到底部
@@ -1029,38 +953,8 @@
             }
         }
 
-        // 添加获取在线用户列表函数
-        async function getOnlineUsers() {
-            try {
-                const response = await fetch(`${WORKER_URL}/api/users/online`);
-                if (response.ok) {
-                    const data = await response.json();
-                    return data;
-                }
-                return [];
-            } catch (error) {
-                console.error('获取在线用户列表失败:', error);
-                return [];
-            }
-        }
-
-        // 添加获取未读消息数量函数
-        async function getUnreadMessageCount() {
-            try {
-                const response = await fetch(`${WORKER_URL}/api/messages/unread/count?userId=${currentUser.id}`);
-                if (response.ok) {
-                    const data = await response.json();
-                    return data.count || 0;
-                }
-                return 0;
-            } catch (error) {
-                console.error('获取未读消息数量失败:', error);
-                return 0;
-            }
-        }
-
-        // 添加标记消息为已读函数
-        async function markMessagesAsRead(messageIds) {
+        // 添加标记消息已读的函数
+        async function markMessageAsRead(messageTimestamp) {
             try {
                 const response = await fetch(`${WORKER_URL}/api/messages/mark-read`, {
                     method: 'POST',
@@ -1069,22 +963,67 @@
                     },
                     body: JSON.stringify({
                         userId: currentUser.id,
-                        messageIds: messageIds
+                        messageIds: [messageTimestamp]
                     })
                 });
-                
+
                 if (response.ok) {
-                    console.log('消息已标记为已读');
-                    return true;
+                    const data = await response.json();
+                    if (data.success && data.updatedMessages) {
+                        // 更新消息的已读状态显示
+                        data.updatedMessages.forEach(updatedMessage => {
+                            const messageElement = document.querySelector(`.message[data-timestamp="${updatedMessage.id}"]`);
+                            if (messageElement) {
+                                const statusDiv = messageElement.querySelector('.message-status');
+                                if (statusDiv) {
+                                    statusDiv.textContent = '已读';
+                                    if (updatedMessage.read_at) {
+                                        statusDiv.title = `读取时间: ${new Date(updatedMessage.read_at).toLocaleString()}`;
+                                    }
+                                }
+                            }
+                        });
+                    }
                 }
-                return false;
             } catch (error) {
-                console.error('标记消息已读失败:', error);
-                return false;
+                console.error('标记消息已读时出错:', error);
             }
         }
 
-        // 修改加载聊天记录函数，添加自动标记已读功能
+        // 添加获取未读消息数的函数
+        async function getUnreadMessageCount() {
+            try {
+                const response = await fetch(`${WORKER_URL}/api/messages/unread/count?userId=${currentUser.id}`);
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.success) {
+                        // 可以在这里更新UI显示未读消息数
+                        updateUnreadCount(data.count);
+                    }
+                }
+            } catch (error) {
+                console.error('获取未读消息数时出错:', error);
+            }
+        }
+
+        // 添加更新未读消息数显示的函数
+        function updateUnreadCount(count) {
+            let countElement = document.querySelector('.unread-count');
+            if (!countElement) {
+                countElement = document.createElement('div');
+                countElement.className = 'unread-count';
+                document.querySelector('.chat-section').appendChild(countElement);
+            }
+            
+            if (count > 0) {
+                countElement.textContent = count;
+                countElement.style.display = 'block';
+            } else {
+                countElement.style.display = 'none';
+            }
+        }
+
+        // 修改加载聊天记录函数
         async function loadChatHistory() {
             try {
                 if (!currentUser) return;
@@ -1117,35 +1056,31 @@
                                 
                                 // 清空并更新参与者列表
                                 participants.clear();
-
-                                // 收集需要标记为已读的消息ID
-                                const unreadMessageIds = [];
+                                if (currentChatType === 'private' && currentTargetUser) {
+                                    // 私聊只显示两个参与者
+                                    participants.add(JSON.stringify({
+                                        id: currentUser.id,
+                                        name: currentUser.name,
+                                        role: currentUser.role
+                                    }));
+                                    participants.add(JSON.stringify({
+                                        id: currentTargetUser.id,
+                                        name: currentTargetUser.name,
+                                        role: currentTargetUser.role
+                                    }));
+                                }
                                 
                                 // 显示历史消息
                                 data.history.forEach(message => {
-                                    // 如果是接收到的消息且发送者是当前聊天的对象，收集消息ID
-                                    if (message.userId !== currentUser.id && 
-                                        ((currentChatType === 'private' && message.userId === currentTargetUser?.id) ||
-                                         currentChatType === 'public')) {
-                                        unreadMessageIds.push(message.timestamp);
-                                    }
                                     displayMessage(message, false);
                                 });
-
-                                // 如果有未读消息，标记为已读
-                                if (unreadMessageIds.length > 0) {
-                                    markMessagesAsRead(unreadMessageIds);
-                                }
-
+                                
                                 // 更新聊天状态
                                 updateChatStatus(currentChatType === 'private' ? 
                                     `与 ${currentTargetUser.name} 的私聊` : '公共聊天室');
                                 
                                 // 滚动到底部
                                 chatContainer.scrollTop = chatContainer.scrollHeight;
-
-                                // 更新在线用户状态
-                                updateOnlineStatus();
                                 return;
                             }
                         }
@@ -1167,70 +1102,6 @@
                 updateChatStatus('加载聊天记录出错');
             }
         }
-
-        // 添加更新在线状态函数
-        async function updateOnlineStatus() {
-            const onlineUsers = await getOnlineUsers();
-            const unreadCount = await getUnreadMessageCount();
-            
-            // 更新参与者列表中的在线状态
-            document.querySelectorAll('.participant').forEach(participant => {
-                const userId = participant.dataset.userId;
-                const isOnline = onlineUsers.some(user => user.id === userId);
-                participant.classList.toggle('online', isOnline);
-            });
-
-            // 如果有未读消息，显示数量
-            if (unreadCount > 0) {
-                showUnreadBadge(unreadCount);
-            }
-        }
-
-        // 添加显示未读消息数量的函数
-        function showUnreadBadge(count) {
-            let badge = document.querySelector('.unread-badge');
-            if (!badge) {
-                badge = document.createElement('div');
-                badge.className = 'unread-badge';
-                document.querySelector('.chat-section').appendChild(badge);
-            }
-            badge.textContent = count;
-            badge.style.display = count > 0 ? 'block' : 'none';
-        }
-
-        // 添加未读消息徽章样式
-        const badgeStyle = document.createElement('style');
-        badgeStyle.textContent = `
-            .unread-badge {
-                position: fixed;
-                top: 70px;
-                right: 10px;
-                background: #e74c3c;
-                color: white;
-                border-radius: 50%;
-                width: 20px;
-                height: 20px;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                font-size: 12px;
-                font-weight: bold;
-                z-index: 1002;
-            }
-
-            .participant.online::after {
-                content: '';
-                position: absolute;
-                right: 5px;
-                top: 5px;
-                width: 8px;
-                height: 8px;
-                background: #2ecc71;
-                border-radius: 50%;
-                border: 2px solid white;
-            }
-        `;
-        document.head.appendChild(badgeStyle);
 
         // 检查用户登录状态
         function checkAuthStatus() {
@@ -1348,7 +1219,7 @@
                         body.classList.remove('menu-open');
                     }
                 });
-            } else {
+                            } else {
                 console.log('Menu elements not found'); // 调试日志
             }
 
@@ -1360,6 +1231,11 @@
                         sendMessage();
                     }
                 });
+            }
+
+            // 在页面加载时获取未读消息数
+            if (currentUser) {
+                getUnreadMessageCount();
             }
         });
 
@@ -1541,19 +1417,13 @@
                     updateConnectionStatus('connected', '已连接');
                     
                     try {
-                        // 发送登录消息到WebSocket
+                        // 发送登录消息到WebSocket，使用正确的用户信息
                         ws.send(JSON.stringify({
                             type: 'login',
                             userId: currentUser.id,
                             userName: currentUser.name,
                             role: currentUser.role
                         }));
-
-                        // 立即更新在线状态
-                        updateOnlineStatus();
-
-                        // 设置定期更新在线状态的定时器
-                        setInterval(updateOnlineStatus, 30000); // 每30秒更新一次
                     } catch (error) {
                         console.error('发送登录消息时出错:', error);
                     }
@@ -1565,7 +1435,6 @@
                         const message = JSON.parse(event.data);
                         
                         if (message.type === 'message') {
-                            // 处理普通消息
                             const shouldDisplay = 
                                 (message.channel === 'public' && currentChatType === 'public') ||
                                 (message.channel === 'private' && (
@@ -1578,55 +1447,21 @@
                                 ));
 
                             if (shouldDisplay) {
-                                if (message.userId !== currentUser.id) {
-                                    // 如果是接收到的消息，直接显示蓝色双钩
-                                    message.status = 'delivered';
-                                }
                                 displayMessage(message);
+                                if (message.userId !== currentUser.id) {
+                                    // 如果是收到的消息，立即标记为已读
+                                    markMessageAsRead(message.timestamp);
+                                }
                             } else if (message.channel === 'private' && 
                                      message.targetUserId === currentUser.id && 
                                      (!currentTargetUser || message.userId !== currentTargetUser.id)) {
                                 showNewMessageNotification(message);
+                                // 更新未读消息数
+                                getUnreadMessageCount();
                             }
-                        } 
-                        else if (message.type === 'message_stored') {
-                            // 处理消息状态更新
-                            const messageElement = document.querySelector(`[data-message-id="${message.messageId}"]`);
-                            if (messageElement) {
-                                const statusDiv = messageElement.querySelector('.message-status');
-                                if (statusDiv) {
-                                    if (message.status === 'offline') {
-                                        statusDiv.className = 'message-status offline';
-                                        statusDiv.innerHTML = '✓';
-                                        
-                                        // 显示离线提示
-                                        const offlineNotice = messageElement.nextElementSibling;
-                                        if (offlineNotice && offlineNotice.classList.contains('offline-notice')) {
-                                            offlineNotice.style.display = 'block';
-                                        }
-                                    } else if (message.status === 'delivered') {
-                                        statusDiv.className = 'message-status sent';
-                                        statusDiv.innerHTML = '✓✓';
-                                        
-                                        // 隐藏离线提示
-                                        const offlineNotice = messageElement.nextElementSibling;
-                                        if (offlineNotice && offlineNotice.classList.contains('offline-notice')) {
-                                            offlineNotice.style.display = 'none';
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                        else if (message.type === 'message_received') {
-                            // 处理消息已读状态
-                            const messageElement = document.querySelector(`[data-message-id="${message.messageId}"]`);
-                            if (messageElement) {
-                                const statusDiv = messageElement.querySelector('.message-status');
-                                if (statusDiv) {
-                                    statusDiv.className = 'message-status sent';
-                                    statusDiv.innerHTML = '✓✓';
-                                }
-                            }
+                        } else if (message.type === 'read_status_update') {
+                            // 处理消息已读状态更新
+                            updateMessageReadStatus(message);
                         }
                     } catch (error) {
                         console.error('处理消息时出错:', error);
@@ -1834,6 +1669,20 @@
             }
         `;
         document.head.appendChild(styleSheet);
+
+        // 添加更新消息已读状态的函数
+        function updateMessageReadStatus(update) {
+            const messageElement = document.querySelector(`.message[data-timestamp="${update.messageId}"]`);
+            if (messageElement) {
+                const statusDiv = messageElement.querySelector('.message-status');
+                if (statusDiv) {
+                    statusDiv.textContent = '已读';
+                    if (update.readAt) {
+                        statusDiv.title = `读取时间: ${new Date(update.readAt).toLocaleString()}`;
+                    }
+                }
+            }
+        }
     </script>
 </body>
 </html> 
