@@ -640,18 +640,6 @@
                 opacity: 1;
             }
         }
-
-        /* 添加消息已读状态相关的样式 */
-        .message-status {
-            font-size: 10px;
-            color: #999;
-            margin-top: 2px;
-        }
-
-        .message.sent .message-status {
-            text-align: right;
-            padding-right: 4px;
-        }
     </style>
 </head>
 <body>
@@ -890,7 +878,6 @@
             const chatContainer = document.getElementById('chatContainer');
             const messageDiv = document.createElement('div');
             messageDiv.className = `message ${message.userId === currentUser.id ? 'sent' : 'received'}`;
-            messageDiv.dataset.timestamp = message.timestamp; // 保存时间戳用于标记已读
 
             // 创建头像
             const avatarDiv = document.createElement('div');
@@ -920,17 +907,6 @@
             const timeDiv = document.createElement('div');
             timeDiv.className = 'message-time';
             timeDiv.textContent = new Date(message.timestamp).toLocaleTimeString();
-
-            // 添加已读状态显示（仅对发送的私聊消息显示）
-            if (message.userId === currentUser.id && message.channel === 'private') {
-                const statusDiv = document.createElement('div');
-                statusDiv.className = 'message-status';
-                statusDiv.textContent = message.readStatus === 'read' ? '已读' : '未读';
-                if (message.readAt) {
-                    statusDiv.title = `读取时间: ${new Date(message.readAt).toLocaleString()}`;
-                }
-                contentWrapper.appendChild(statusDiv);
-            }
             
             // 组装消息
             contentWrapper.appendChild(senderDiv);
@@ -942,84 +918,9 @@
             // 添加到聊天容器
             chatContainer.appendChild(messageDiv);
             
-            // 如果是新收到的消息且不是自己发送的，标记为已读
-            if (isNew && message.userId !== currentUser.id) {
-                markMessageAsRead(message.timestamp);
-            }
-            
             // 滚动到底部
             if (isNew) {
                 chatContainer.scrollTop = chatContainer.scrollHeight;
-            }
-        }
-
-        // 添加标记消息已读的函数
-        async function markMessageAsRead(messageTimestamp) {
-            try {
-                const response = await fetch(`${WORKER_URL}/api/messages/mark-read`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        userId: currentUser.id,
-                        messageIds: [messageTimestamp]
-                    })
-                });
-
-                if (response.ok) {
-                    const data = await response.json();
-                    if (data.success && data.updatedMessages) {
-                        // 更新消息的已读状态显示
-                        data.updatedMessages.forEach(updatedMessage => {
-                            const messageElement = document.querySelector(`.message[data-timestamp="${updatedMessage.id}"]`);
-                            if (messageElement) {
-                                const statusDiv = messageElement.querySelector('.message-status');
-                                if (statusDiv) {
-                                    statusDiv.textContent = '已读';
-                                    if (updatedMessage.read_at) {
-                                        statusDiv.title = `读取时间: ${new Date(updatedMessage.read_at).toLocaleString()}`;
-                                    }
-                                }
-                            }
-                        });
-                    }
-                }
-            } catch (error) {
-                console.error('标记消息已读时出错:', error);
-            }
-        }
-
-        // 添加获取未读消息数的函数
-        async function getUnreadMessageCount() {
-            try {
-                const response = await fetch(`${WORKER_URL}/api/messages/unread/count?userId=${currentUser.id}`);
-                if (response.ok) {
-                    const data = await response.json();
-                    if (data.success) {
-                        // 可以在这里更新UI显示未读消息数
-                        updateUnreadCount(data.count);
-                    }
-                }
-            } catch (error) {
-                console.error('获取未读消息数时出错:', error);
-            }
-        }
-
-        // 添加更新未读消息数显示的函数
-        function updateUnreadCount(count) {
-            let countElement = document.querySelector('.unread-count');
-            if (!countElement) {
-                countElement = document.createElement('div');
-                countElement.className = 'unread-count';
-                document.querySelector('.chat-section').appendChild(countElement);
-            }
-            
-            if (count > 0) {
-                countElement.textContent = count;
-                countElement.style.display = 'block';
-            } else {
-                countElement.style.display = 'none';
             }
         }
 
@@ -1028,107 +929,75 @@
             try {
                 if (!currentUser) return;
                 
-                // 构建API URL
-                let apiUrl = `${WORKER_URL}/api/chat/history?userId=${currentUser.id}`;
-                
-                if (currentChatType === 'private' && currentTargetUser) {
-                    apiUrl += `&channel=private&targetUserId=${currentTargetUser.id}`;
-                } else {
-                    apiUrl += '&channel=public';
-                }
-                
-                console.log('请求聊天记录:', apiUrl);
-                const response = await fetch(apiUrl);
-                
-                if (!response.ok) {
-                    throw new Error('加载聊天记录失败');
-                }
+                let retryCount = 0;
+                const maxRetries = 3;
+                const retryDelay = 1000;
 
-                const data = await response.json();
-                if (!data.success || !data.history) {
-                    throw new Error('无效的聊天记录数据');
-                }
-
-                console.log(`成功加载 ${data.history.length} 条聊天记录`);
-                const chatContainer = document.getElementById('chatContainer');
-                chatContainer.innerHTML = '';
-                
-                // 清空并更新参与者列表
-                participants.clear();
-                
-                if (currentChatType === 'private' && currentTargetUser) {
-                    // 私聊只显示两个参与者
-                    participants.add(JSON.stringify({
-                        id: currentUser.id,
-                        name: currentUser.name,
-                        role: currentUser.role
-                    }));
-                    participants.add(JSON.stringify({
-                        id: currentTargetUser.id,
-                        name: currentTargetUser.name,
-                        role: currentTargetUser.role
-                    }));
-
-                    // 收集所有未读消息的ID
-                    const unreadMessageIds = data.history
-                        .filter(msg => 
-                            msg.userId === currentTargetUser.id && 
-                            (!msg.readStatus || msg.readStatus === 'unread')
-                        )
-                        .map(msg => msg.timestamp);
-
-                    // 如果有未读消息，立即调用mark-read API
-                    if (unreadMessageIds.length > 0) {
-                        console.log('正在标记消息为已读:', unreadMessageIds);
+                while (retryCount < maxRetries) {
+                    try {
+                        // 构建API URL
+                        let apiUrl = `${WORKER_URL}/api/chat/history?userId=${currentUser.id}`;
                         
-                        try {
-                            const markReadResponse = await fetch(`${WORKER_URL}/api/messages/mark-read`, {
-                                method: 'POST',
-                                headers: {
-                                    'Content-Type': 'application/json'
-                                },
-                                body: JSON.stringify({
-                                    userId: currentUser.id,
-                                    messageIds: unreadMessageIds
-                                })
-                            });
-
-                            const markReadResult = await markReadResponse.json();
-                            console.log('标记已读响应:', markReadResult);
-
-                            if (markReadResult.success) {
-                                // 更新本地消息状态
-                                markReadResult.updatedMessages.forEach(updatedMsg => {
-                                    const msgToUpdate = data.history.find(msg => msg.timestamp === updatedMsg.id);
-                                    if (msgToUpdate) {
-                                        msgToUpdate.readStatus = 'read';
-                                        msgToUpdate.readAt = updatedMsg.read_at;
-                                    }
+                        if (currentChatType === 'private' && currentTargetUser) {
+                            apiUrl += `&channel=private&targetUserId=${currentTargetUser.id}`;
+                        } else {
+                            apiUrl += '&channel=public';
+                        }
+                        
+                        console.log('请求聊天记录:', apiUrl);
+                        const response = await fetch(apiUrl);
+                        
+                        if (response.ok) {
+                            const data = await response.json();
+                            
+                            if (data.success && data.history) {
+                                console.log(`成功加载 ${data.history.length} 条聊天记录`);
+                                const chatContainer = document.getElementById('chatContainer');
+                                chatContainer.innerHTML = '';
+                                
+                                // 清空并更新参与者列表
+                                participants.clear();
+                                if (currentChatType === 'private' && currentTargetUser) {
+                                    // 私聊只显示两个参与者
+                                    participants.add(JSON.stringify({
+                                        id: currentUser.id,
+                                        name: currentUser.name,
+                                        role: currentUser.role
+                                    }));
+                                    participants.add(JSON.stringify({
+                                        id: currentTargetUser.id,
+                                        name: currentTargetUser.name,
+                                        role: currentTargetUser.role
+                                    }));
+                                }
+                                
+                                // 显示历史消息
+                                data.history.forEach(message => {
+                                    displayMessage(message, false);
                                 });
-                            } else {
-                                console.error('标记消息已读失败:', markReadResult.error);
+                                
+                                // 更新聊天状态
+                                updateChatStatus(currentChatType === 'private' ? 
+                                    `与 ${currentTargetUser.name} 的私聊` : '公共聊天室');
+                                
+                                // 滚动到底部
+                                chatContainer.scrollTop = chatContainer.scrollHeight;
+                                return;
                             }
-                        } catch (error) {
-                            console.error('调用mark-read API时出错:', error);
+                        }
+                        
+                        if (retryCount < maxRetries - 1) {
+                            await new Promise(resolve => setTimeout(resolve, retryDelay));
+                            retryCount++;
+                        }
+                    } catch (error) {
+                        console.error(`加载聊天记录失败 (尝试 ${retryCount + 1}/${maxRetries}):`, error);
+                        if (retryCount < maxRetries - 1) {
+                            await new Promise(resolve => setTimeout(resolve, retryDelay));
+                            retryCount++;
                         }
                     }
                 }
-                
-                // 显示历史消息
-                data.history.forEach(message => {
-                    displayMessage(message, false);
-                });
-                
-                // 更新聊天状态
-                updateChatStatus(currentChatType === 'private' ? 
-                    `与 ${currentTargetUser.name} 的私聊` : '公共聊天室');
-                
-                // 滚动到底部
-                chatContainer.scrollTop = chatContainer.scrollHeight;
-
-                // 更新未读消息计数
-                getUnreadMessageCount();
-                
             } catch (error) {
                 console.error('加载聊天记录时出错:', error);
                 updateChatStatus('加载聊天记录出错');
@@ -1263,11 +1132,6 @@
                         sendMessage();
                     }
                 });
-            }
-
-            // 在页面加载时获取未读消息数
-            if (currentUser) {
-                getUnreadMessageCount();
             }
         });
 
@@ -1466,13 +1330,19 @@
                         console.log('收到消息:', event.data);
                         const message = JSON.parse(event.data);
                         
+                        // 处理不同类型的消息
                         if (message.type === 'message') {
+                            // 检查是否应该显示这条消息
                             const shouldDisplay = 
+                                // 公共消息
                                 (message.channel === 'public' && currentChatType === 'public') ||
+                                // 私聊消息 - 当前用户是发送者或接收者
                                 (message.channel === 'private' && (
+                                    // 当前用户是发送者且正在与接收者聊天
                                     (message.userId === currentUser.id && 
                                      currentTargetUser && 
                                      message.targetUserId === currentTargetUser.id) ||
+                                    // 当前用户是接收者且正在与发送者聊天
                                     (message.targetUserId === currentUser.id && 
                                      currentTargetUser && 
                                      message.userId === currentTargetUser.id)
@@ -1480,20 +1350,29 @@
 
                             if (shouldDisplay) {
                         displayMessage(message);
-                                if (message.userId !== currentUser.id) {
-                                    // 如果是收到的消息，立即标记为已读
-                                    markMessageAsRead(message.timestamp);
+                                // 如果是私聊消息，确保参与者列表包含发送者和接收者
+                                if (message.channel === 'private') {
+                                    const sender = {
+                                        id: message.userId,
+                                        name: message.userName,
+                                        role: message.role
+                                    };
+                                    const receiver = {
+                                        id: message.targetUserId,
+                                        name: message.targetUserName,
+                                        role: message.targetRole || 'user'
+                                    };
+                                    participants.add(JSON.stringify(sender));
+                                    participants.add(JSON.stringify(receiver));
+                                    displayParticipants();
                                 }
                             } else if (message.channel === 'private' && 
                                      message.targetUserId === currentUser.id && 
                                      (!currentTargetUser || message.userId !== currentTargetUser.id)) {
+                                // 如果是发给当前用户的新私聊消息，但当前不在对应的聊天窗口
+                                // 可以添加一个通知或提示
                                 showNewMessageNotification(message);
-                                // 更新未读消息数
-                                getUnreadMessageCount();
                             }
-                        } else if (message.type === 'read_status_update') {
-                            // 处理消息已读状态更新
-                            updateMessageReadStatus(message);
                         }
                     } catch (error) {
                         console.error('处理消息时出错:', error);
@@ -1701,20 +1580,6 @@
             }
         `;
         document.head.appendChild(styleSheet);
-
-        // 添加更新消息已读状态的函数
-        function updateMessageReadStatus(update) {
-            const messageElement = document.querySelector(`.message[data-timestamp="${update.messageId}"]`);
-            if (messageElement) {
-                const statusDiv = messageElement.querySelector('.message-status');
-                if (statusDiv) {
-                    statusDiv.textContent = '已读';
-                    if (update.readAt) {
-                        statusDiv.title = `读取时间: ${new Date(update.readAt).toLocaleString()}`;
-                    }
-                }
-            }
-        }
     </script>
 </body>
 </html> 
