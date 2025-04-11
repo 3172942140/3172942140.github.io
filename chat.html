@@ -10,150 +10,105 @@
     <script src="/js/config.js"></script>
     <script src="/js/common.js"></script>
     <style>
+        /* 重置部分样式 */
         .main-content {
-            max-width: 1200px;
-            margin: 6rem auto 2rem;
-            padding: 0 1rem;
+            max-width: 100% !important;
+            width: 100% !important;
+            margin: 6rem auto 2rem !important;
+            padding: 0 !important;
         }
 
-        /* 加载动画容器 */
-        .loading-container {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 200px;
+        /* 聊天容器样式 */
+        .chat-wrapper {
             width: 100%;
-            flex-direction: column;
-            gap: 1.5rem;
-        }
-
-        /* 加载动画 */
-        .loading-spinner {
-            width: 50px;
-            height: 50px;
-            border: 3px solid #f3f3f3;
-            border-top: 3px solid #3498db;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        @keyframes fadeInUp {
-            from {
-                opacity: 0;
-                transform: translateY(20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        @keyframes fadeIn {
-            from {
-                opacity: 0;
-                transform: translateY(20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        .container {
-            animation: fadeIn 0.5s ease;
-            max-width: 800px;
+            max-width: 1200px;
             margin: 0 auto;
-            padding: 20px;
+            padding: 0 20px;
         }
 
         .chat-section {
-            border: 1px solid #ccc;
-            padding: 20px;
+            width: 100%;
+            background: white;
             border-radius: 12px;
-            background-color: white;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-            transition: all 0.3s ease;
-        }
-
-        .chat-section:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 8px 15px rgba(0,0,0,0.1);
-        }
-
-        .message-input {
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            padding: 20px;
             display: flex;
-            gap: 10px;
-            margin-top: 10px;
-        }
-
-        .message-input input {
-            flex: 1;
-            padding: 12px;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            font-size: 14px;
-            transition: all 0.3s ease;
-        }
-
-        .message-input input:focus {
-            outline: none;
-            border-color: #3498db;
-            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
-        }
-
-        .message-input button {
-            padding: 8px 20px;
-            background: linear-gradient(135deg, #3498db, #2ecc71);
-            color: white;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            font-weight: 600;
-            transition: all 0.3s ease;
-        }
-
-        .message-input button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 15px rgba(52, 152, 219, 0.3);
+            flex-direction: column;
+            gap: 20px;
+            min-height: 80vh;
         }
 
         .chat-container {
-            height: 400px;
-            border: 1px solid #ddd;
-            padding: 15px;
-            overflow-y: auto;
-            margin-bottom: 10px;
+            flex: 1;
+            width: 100%;
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
             border-radius: 8px;
-            background-color: #f9f9f9;
+            padding: 20px;
+            overflow-y: auto;
+            min-height: 500px;
         }
 
+        /* 消息样式 */
         .message {
-            margin: 10px 0;
+            margin: 10px 46px;
             max-width: 70%;
             clear: both;
             animation: fadeIn 0.3s ease;
-        }
-
-        .message-content {
-            padding: 10px 15px;
-            border-radius: 15px;
+            display: flex;
+            flex-direction: column;
             position: relative;
-            word-wrap: break-word;
         }
 
-        .message-sender {
-            font-size: 12px;
+        .message-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
             margin-bottom: 4px;
-            color: #666;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            color: #fff;
+            background: linear-gradient(135deg, #3498db, #2ecc71);
+            position: absolute;
+            top: 0;
         }
 
         .message.sent {
             float: right;
+            align-items: flex-end;
+            margin-right: 46px;
+        }
+
+        .message.received {
+            float: left;
+            align-items: flex-start;
+            margin-left: 46px;
+        }
+
+        .message.sent .message-avatar {
+            right: -46px;
+            background: url('/images/宇智波pdx.png') center/cover;
+        }
+
+        .message.received .message-avatar {
+            left: -46px;
+        }
+
+        .message-content-wrapper {
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+        }
+
+        .message-content {
+            padding: 12px 16px;
+            border-radius: 15px;
+            position: relative;
+            word-wrap: break-word;
+            line-height: 1.4;
+            margin-top: 4px;
         }
 
         .message.sent .message-content {
@@ -162,88 +117,47 @@
             border-bottom-right-radius: 5px;
         }
 
-        .message.sent .message-sender {
-            text-align: right;
-        }
-
-        .message.received {
-            float: left;
-        }
-
         .message.received .message-content {
             background-color: white;
-            color: black;
+            color: #333;
             border-bottom-left-radius: 5px;
-            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
 
-        .public-message .message-content {
-            background-color: #e9ecef;
+        /* 修改displayMessage函数的相关样式 */
+        .message-sender {
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 2px;
         }
 
-        .user-info {
-            margin-bottom: 15px;
-            padding: 10px 15px;
-            background-color: #e9ecef;
-            border-radius: 8px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            animation: fadeIn 0.5s ease;
+        .message.sent .message-sender {
+            text-align: right;
+            padding-right: 4px;
         }
 
-        .chat-type-selector {
-            margin-bottom: 15px;
-            display: flex;
-            gap: 10px;
-            animation: fadeIn 0.5s ease;
+        .message.received .message-sender {
+            text-align: left;
+            padding-left: 4px;
         }
 
-        .chat-type-selector button {
-            padding: 8px 15px;
-            border: none;
-            border-radius: 8px;
-            background-color: #6c757d;
-            color: white;
-            cursor: pointer;
-            transition: all 0.3s ease;
+        .message-time {
+            font-size: 10px;
+            color: #999;
+            margin-top: 4px;
         }
 
-        .chat-type-selector button:hover {
-            background-color: #5a6268;
-            transform: translateY(-2px);
+        .message.sent .message-time {
+            text-align: right;
+            padding-right: 4px;
         }
 
-        .chat-type-selector button.active {
-            background: linear-gradient(135deg, #3498db, #2ecc71);
+        .message.received .message-time {
+            text-align: left;
+            padding-left: 4px;
         }
 
-        .error {
-            color: #dc3545;
-            margin-top: 5px;
-            padding: 8px;
-            border-radius: 4px;
-            background-color: #f8d7da;
-            animation: fadeIn 0.3s ease;
-        }
-
-        .logout-btn {
-            padding: 6px 12px;
-            background: linear-gradient(135deg, #e74c3c, #c0392b);
-            color: white;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 14px;
-            font-weight: 600;
-            transition: all 0.3s ease;
-        }
-
-        .logout-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 15px rgba(231, 76, 60, 0.3);
-        }
-
+        /* 连接状态样式 */
         .connection-status {
             position: fixed;
             top: 80px;
@@ -300,6 +214,61 @@
             background-color: #dc3545;
         }
 
+        /* 输入区域样式 */
+        .message-input {
+            width: 100%;
+            display: flex;
+            gap: 12px;
+            padding: 15px;
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+        }
+
+        .message-input input {
+            flex: 1;
+            padding: 12px 16px;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            font-size: 16px;
+            outline: none;
+            transition: all 0.3s ease;
+        }
+
+        .message-input input:focus {
+            border-color: #3498db;
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+        }
+
+        .message-input button {
+            padding: 12px 24px;
+            background: linear-gradient(135deg, #3498db, #2ecc71);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            white-space: nowrap;
+        }
+
+        .message-input button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(52, 152, 219, 0.2);
+        }
+
+        /* 动画效果 */
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
         @keyframes pulse-green {
             0% {
                 box-shadow: 0 0 0 0 rgba(40, 167, 69, 0.4);
@@ -318,125 +287,103 @@
             100% { transform: scale(1); }
         }
 
-        .message-time {
-            font-size: 10px;
-            color: #999;
-            margin-top: 4px;
-            text-align: right;
-        }
-
-        .message.sent .message-time {
-            text-align: right;
-        }
-
-        .message.received .message-time {
-            text-align: left;
-        }
-
-        /* 响应式布局 */
+        /* 响应式调整 */
         @media (max-width: 768px) {
-            .main-content {
-                margin: 4rem auto 1.5rem;
-                padding: 1rem;
+            .chat-wrapper {
+                padding: 0 15px;
             }
-            
-            .container {
-                padding: 10px;
-            }
-            
+
             .chat-section {
                 padding: 15px;
+                min-height: calc(100vh - 120px);
             }
 
-            .nav-links {
-                display: none;
-                position: fixed;
-                top: 56px;
-                left: 0;
-                right: 0;
-                bottom: 0;
-                background-color: rgba(255, 255, 255, 0.95);
-                backdrop-filter: blur(10px);
-                -webkit-backdrop-filter: blur(10px);
-                flex-direction: column;
-                justify-content: flex-start;
-                align-items: center;
-                gap: 0.5rem;
-                padding: 1rem;
-                z-index: 999;
-                opacity: 0;
-                visibility: hidden;
-                transition: all 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
-                border-top: 1px solid rgba(0, 0, 0, 0.05);
-                box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            .message {
+                max-width: 85%;
+                margin: 10px 40px;
             }
 
-            .nav-links.active {
-                display: flex;
-                opacity: 1;
-                visibility: visible;
+            .message.sent {
+                margin-right: 40px;
             }
 
-            .nav-links a {
-                font-size: 1.1rem;
-                padding: 1rem 2rem;
-                margin: 0.2rem 0;
-                width: 100%;
-                max-width: 300px;
-                text-align: center;
-                border-radius: 12px;
-                transition: all 0.3s ease;
-                background-color: rgba(255, 255, 255, 0.7);
-                backdrop-filter: blur(5px);
-                -webkit-backdrop-filter: blur(5px);
-                border: 1px solid rgba(52, 152, 219, 0.1);
-                transform: translateY(20px);
-                opacity: 0;
-                animation: slideIn 0.3s ease forwards;
+            .message.received {
+                margin-left: 40px;
             }
 
-            .nav-links.active a {
-                opacity: 1;
-                transform: translateY(0);
+            .message-avatar {
+                width: 32px;
+                height: 32px;
+                font-size: 14px;
             }
 
-            @keyframes slideIn {
-                from {
-                    opacity: 0;
-                    transform: translateY(20px);
-                }
-                to {
-                    opacity: 1;
-                    transform: translateY(0);
-                }
+            .message.sent .message-avatar {
+                right: -40px;
             }
 
-            body.menu-open {
-                overflow: hidden;
+            .message.received .message-avatar {
+                left: -40px;
+            }
+
+            .message-input {
+                padding: 12px;
             }
         }
 
         @media (max-width: 480px) {
-            .main-content {
-                margin: 3.5rem auto 1rem;
-                padding: 0.5rem;
+            .chat-wrapper {
+                padding: 0 10px;
             }
-            
-            .container {
-                padding: 5px;
-            }
-            
+
             .chat-section {
                 padding: 10px;
-                border-radius: 8px;
             }
-            
+
+            .message {
+                max-width: 90%;
+                margin: 10px 36px;
+            }
+
+            .message.sent {
+                margin-right: 36px;
+            }
+
+            .message.received {
+                margin-left: 36px;
+            }
+
+            .message-avatar {
+                width: 28px;
+                height: 28px;
+                font-size: 12px;
+            }
+
+            .message.sent .message-avatar {
+                right: -36px;
+            }
+
+            .message.received .message-avatar {
+                left: -36px;
+            }
+
+            .message-input {
+                padding: 10px;
+            }
+
             .message-input input {
-                padding: 8px;
+                padding: 10px;
+                font-size: 14px;
             }
-            
+
             .message-input button {
-                padding: 8px 15px;
+                padding: 10px 20px;
+            }
+
+            .connection-status {
+                top: 70px;
+                right: 10px;
+                padding: 8px 12px;
+                font-size: 12px;
             }
         }
     </style>
@@ -470,10 +417,9 @@
     </div>
 
     <main class="main-content">
-        <div class="container">
+        <div class="chat-wrapper">
             <div class="chat-section" id="chatSection">
                 <div class="chat-container" id="chatContainer"></div>
-
                 <div class="message-input">
                     <input type="text" id="messageInput" placeholder="输入消息...">
                     <button onclick="sendMessage()">发送</button>
@@ -1048,20 +994,33 @@
             // 设置消息的基本类
             messageDiv.className = 'message';
             
-            // 添加public-message类
-            messageDiv.classList.add('public-message');
-            
             // 根据发送者添加sent或received类
             if (message.userId === currentUser.id) {
                 messageDiv.classList.add('sent');
             } else {
                 messageDiv.classList.add('received');
             }
+
+            // 创建头像元素
+            const avatarDiv = document.createElement('div');
+            avatarDiv.className = 'message-avatar';
+            if (message.role === 'admin') {
+                // admin用户使用特定图片
+                avatarDiv.style.backgroundImage = "url('/images/宇智波pdx.png')";
+                avatarDiv.style.backgroundSize = 'cover';
+            } else {
+                // 其他用户使用昵称第一个字符
+                avatarDiv.textContent = message.userName.charAt(0);
+            }
+
+            // 创建消息内容包装器
+            const contentWrapper = document.createElement('div');
+            contentWrapper.className = 'message-content-wrapper';
             
             // 创建发送者名称元素
             const senderDiv = document.createElement('div');
             senderDiv.className = 'message-sender';
-            senderDiv.textContent = message.userId === currentUser.id ? '我' : message.userName || '其他用户';
+            senderDiv.textContent = message.userId === currentUser.id ? '我' : message.userName;
             
             // 创建消息内容元素
             const contentDiv = document.createElement('div');
@@ -1077,9 +1036,12 @@
             timeDiv.textContent = new Date(message.timestamp).toLocaleTimeString();
             
             // 组装消息
-            messageDiv.appendChild(senderDiv);
-            messageDiv.appendChild(contentDiv);
-            messageDiv.appendChild(timeDiv);
+            contentWrapper.appendChild(senderDiv);
+            contentWrapper.appendChild(contentDiv);
+            contentWrapper.appendChild(timeDiv);
+            
+            messageDiv.appendChild(avatarDiv);
+            messageDiv.appendChild(contentWrapper);
             
             // 添加到聊天容器
             chatContainer.appendChild(messageDiv);
