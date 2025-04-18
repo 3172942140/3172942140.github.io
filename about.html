@@ -189,6 +189,36 @@
             font-size: 1.2rem;
         }
 
+        .space-link {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            z-index: 10;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            padding: 8px 15px;
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 20px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            color: #333;
+            font-weight: 500;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+        }
+        
+        .space-link:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+            background: white;
+        }
+        
+        .space-link i {
+            margin-right: 6px;
+            font-size: 1rem;
+            color: #ff4d4d;
+        }
+
         @media (max-width: 768px) {
             .main-content {
                 margin: 4rem auto 1.5rem;
@@ -352,6 +382,10 @@
 
     <main class="main-content">
         <section class="about-section">
+            <a href="/about_sapce.html" class="space-link">
+                <i class="fas fa-external-link-alt"></i>
+                进入我的空间
+            </a>
             <div class="profile-container">
                 <div class="avatar-container">
                     <img src="/images/宇智波pdx.png" alt="宇智波pdx" />
