@@ -588,11 +588,14 @@
                 const tags = await response.json();
                 
                 if (tags.length > 0) {
+                    // 计算所有标签的文章总数
+                    const totalPostCount = tags.reduce((sum, tag) => sum + tag.post_count, 0);
+                    
                     tagsSection.style.display = 'block';
                     tagsContainer.innerHTML = `
                         <div class="tag-item" data-id="all" onclick="filterPostsByTag('all')">
                             全部
-                            <span class="tag-count">0</span>
+                            <span class="tag-count">${totalPostCount}</span>
                         </div>
                         ${tags.map(tag => `
                             <div class="tag-item" data-id="${tag.id}" onclick="filterPostsByTag('${tag.id}')">
