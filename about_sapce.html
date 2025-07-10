@@ -3,7 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>申志昊的个人主页</title>
+    <title>szhAo的个人主页</title>
+    <link rel="icon" type="image/png" href="images/favicon.png">
+    <link rel="icon" type="image/svg+xml" href="images/favicon.svg">
     <!-- Animate.css for cool animations -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
     <!-- AOS (Animate On Scroll) library -->
@@ -440,31 +442,7 @@
             transform: scale(1);
         }
         
-        .audio-toggle {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            background: rgba(108, 92, 231, 0.1);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            z-index: 999;
-            opacity: 0;
-        }
-        
-        .audio-toggle.visible {
-            opacity: 1;
-        }
-        
-        .audio-toggle:hover {
-            background: rgba(108, 92, 231, 0.3);
-            transform: scale(1.1);
-        }
+
         
         /* 新增滚动展示样式 */
         .scroll-indicator {
@@ -1158,10 +1136,10 @@
         <!-- 欢迎部分 -->
         <section class="welcome-section">
             <div class="avatar-container" data-aos="flip-left" data-aos-duration="1500">
-                <img src="asserts/宇智波pdx.png" alt="申志昊的头像" class="avatar animate__animated animate__zoomIn">
+                <img src="./images/宇智波pdx.png" alt="szhAo的头像" class="avatar animate__animated animate__zoomIn">
             </div>
             
-            <h1 class="name animate__animated animate__pulse animate__infinite">申志昊</h1>
+            <h1 class="name animate__animated animate__pulse animate__infinite">szhAo</h1>
             <p class="tagline" data-aos="fade-up">19岁 · 郑州轻工业大学 · 大二在读</p>
             
             <div class="typed-text-container" data-aos="fade-up" data-aos-delay="300">
@@ -1316,8 +1294,7 @@
         </section>
     </div>
     
-    <!-- 音乐控制按钮 -->
-    <div class="audio-toggle" title="背景音乐">🎵</div>
+
 
     <!-- 彩蛋按钮 -->
     <div class="easter-egg" title="点击有惊喜">🎁</div>
@@ -1464,9 +1441,7 @@
         
         // 初始化页面加载和入场动画效果
         document.addEventListener('DOMContentLoaded', function() {
-            let audio = new Audio('https://soundbible.com/mp3/analog-watch-alarm_daniel-simion.mp3');
-            audio.loop = true;
-            audio.volume = 0.3;
+
             
             // 处理滚动显示元素
             const scrollRevealElements = document.querySelectorAll('.scroll-reveal');
@@ -1517,21 +1492,7 @@
                 updateParallax();
             });
             
-            // 音乐控制
-            const audioToggle = document.querySelector('.audio-toggle');
-            let audioPlaying = false;
-            
-            audioToggle.addEventListener('click', function() {
-                if (audioPlaying) {
-                    audio.pause();
-                    this.textContent = '🎵';
-                    audioPlaying = false;
-                } else {
-                    audio.play().catch(e => console.log('Audio play failed: ', e));
-                    this.textContent = '🔇';
-                    audioPlaying = true;
-                }
-            });
+
             
             // 互动小球
             const ball = document.querySelector('.interactive-ball');
@@ -1781,7 +1742,7 @@
                     // 显示滚动提示和互动元素
                     setTimeout(() => {
                         document.querySelector('.scroll-indicator').classList.add('visible');
-                        document.querySelector('.audio-toggle').classList.add('visible');
+
                         showBall();
                         
                         // 显示球形UI
@@ -1799,4 +1760,4 @@
         });
     </script>
 </body>
-</html> 
+</html>
