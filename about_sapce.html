@@ -528,7 +528,7 @@
             position: relative;
             margin: 60px 0;
             padding: 30px 0;
-            overflow: visible; /* 修改为visible，防止内容溢出被截断 */
+            overflow: hidden;
         }
         
         .timeline::before {
@@ -557,7 +557,6 @@
             opacity: 0;
             transform: translateY(30px);
             transition: opacity 0.8s ease, transform 0.8s ease;
-            overflow: visible; /* 确保内容不被裁剪 */
         }
         
         .timeline-item.reveal {
@@ -582,19 +581,16 @@
             backdrop-filter: blur(5px);
             border: 1px solid rgba(108, 92, 231, 0.2);
             transform-style: preserve-3d;
-            z-index: 5; /* 增加z-index确保显示 */
         }
         
         .timeline-item:nth-child(odd) .timeline-content {
             float: left;
             transform: rotateY(5deg);
-            margin-right: 20px; /* 添加右边距，避免右侧被截断 */
         }
         
         .timeline-item:nth-child(even) .timeline-content {
             float: right;
             transform: rotateY(-5deg);
-            margin-left: 20px; /* 添加左边距，避免左侧被截断 */
         }
         
         .timeline-content:hover {
@@ -784,11 +780,8 @@
         
         .timeline-events-wrapper {
             position: relative;
-            overflow: visible; /* 修改为visible，防止内容溢出被截断 */
+            overflow: hidden;
             padding-bottom: 50px;
-            width: 100%; /* 确保宽度为100% */
-            max-width: 1100px; /* 添加最大宽度限制 */
-            margin: 0 auto; /* 居中显示 */
         }
         
         .clearfix::after {
@@ -1131,122 +1124,6 @@
             pointer-events: none;
             z-index: 20;
         }
-        
-        /* 添加手机端时间线卡片样式优化 */
-        @media (max-width: 768px) {
-            .timeline-content {
-                width: calc(50% - 30px); /* 增加卡片宽度 */
-                padding: 20px;
-                font-size: 0.95em;
-                margin-left: 10px; /* 重置边距 */
-                margin-right: 10px; /* 重置边距 */
-            }
-            
-            .timeline::before {
-                left: 50%;
-            }
-            
-            .timeline-item:nth-child(odd) .timeline-content::after {
-                right: -45px; /* 调整圆点位置 */
-            }
-            
-            .timeline-item:nth-child(even) .timeline-content::after {
-                left: -45px; /* 调整圆点位置 */
-            }
-            
-            .timeline-icon {
-                width: 40px;
-                height: 40px;
-                font-size: 1.2rem;
-            }
-            
-            .timeline-item:nth-child(odd) .timeline-icon {
-                right: -20px;
-            }
-            
-            .timeline-item:nth-child(even) .timeline-icon {
-                left: -20px;
-            }
-            
-            .timeline-title {
-                font-size: 1.3rem;
-            }
-            
-            .timeline-date {
-                font-size: 0.9rem;
-                padding: 4px 12px;
-            }
-            
-            .timeline-description {
-                font-size: 1rem;
-            }
-        }
-        
-        @media (max-width: 576px) {
-            .timeline::before {
-                left: 20px; /* 移动时间线到左侧 */
-                margin-left: 0;
-            }
-            
-            .timeline-content {
-                width: calc(100% - 60px); /* 全宽减去左侧空间 */
-                float: right !important;
-                margin-left: 60px;
-            }
-            
-            .timeline-item:nth-child(odd) .timeline-content,
-            .timeline-item:nth-child(even) .timeline-content {
-                float: right;
-                transform: none;
-            }
-            
-            .timeline-content::after {
-                left: -45px !important;
-                right: auto !important;
-            }
-            
-            .timeline-icon {
-                left: -20px !important;
-                right: auto !important;
-            }
-            
-            .timeline-dots {
-                left: 20px !important;
-            }
-            
-            .timeline-dot {
-                transform: none;
-            }
-            
-            .timeline-year-marker {
-                left: 20px;
-                transform: none;
-                font-size: 1rem;
-                padding: 3px 10px;
-            }
-            
-            .timeline-progress {
-                left: 20px;
-                transform: none;
-            }
-            
-            /* 优化浮动球体在小屏幕上的位置 */
-            .floating-orb {
-                position: relative !important;
-                top: auto !important;
-                left: auto !important;
-                margin: 20px auto !important;
-                display: inline-flex !important;
-            }
-            
-            .container {
-                text-align: center;
-            }
-            
-            .connections {
-                display: none; /* 在小屏上隐藏连线 */
-            }
-        }
     </style>
 </head>
 <body>
@@ -1262,6 +1139,8 @@
             <span>在</span>
             <span>加</span>
             <span>载</span>
+            <span>精</span>
+            <span>彩</span>
             <span>...</span>
         </div>
     </div>
@@ -1279,10 +1158,10 @@
         <!-- 欢迎部分 -->
         <section class="welcome-section">
             <div class="avatar-container" data-aos="flip-left" data-aos-duration="1500">
-                <img src="images/宇智波pdx.png" alt="szhAo的头像" class="avatar animate__animated animate__zoomIn">
+                <img src="asserts/宇智波pdx.png" alt="申志昊的头像" class="avatar animate__animated animate__zoomIn">
             </div>
             
-            <h1 class="name animate__animated animate__pulse animate__infinite">szhAo</h1>
+            <h1 class="name animate__animated animate__pulse animate__infinite">申志昊</h1>
             <p class="tagline" data-aos="fade-up">19岁 · 郑州轻工业大学 · 大二在读</p>
             
             <div class="typed-text-container" data-aos="fade-up" data-aos-delay="300">
@@ -1308,7 +1187,7 @@
             <div class="glow-effect"></div>
             <div class="orb-content">
                 <div class="orb-icon"><i class="fas fa-mobile-alt"></i></div>
-                <div class="orb-title">电话</div>
+                <div class="orb-title">手机</div>
                 <div class="orb-text">17703974967</div>
             </div>
         </div>
@@ -1376,7 +1255,7 @@
                     <div class="timeline-content">
                         <div class="timeline-icon"><i class="fas fa-users"></i></div>
                         <h3 class="timeline-title">加入校园电竞社团</h3>
-                        <p class="timeline-date">2023年</p>
+                        <p class="timeline-date">2021年</p>
                         <p class="timeline-description">与志同道合的伙伴一起训练，参加校内比赛。通过团队合作和战术配合，不断提升游戏技巧和临场反应能力。</p>
                     </div>
                 </div>
@@ -1384,8 +1263,8 @@
                 <div class="timeline-item clearfix" data-aos="fade-right">
                     <div class="timeline-content">
                         <div class="timeline-icon"><i class="fas fa-clock"></i></div>
-                        <h3 class="timeline-title">游戏时长突破1000小时</h3>
-                        <p class="timeline-date">2023年</p>
+                        <h3 class="timeline-title">CS游戏时长突破1000小时</h3>
+                        <p class="timeline-date">2022年</p>
                         <p class="timeline-description">技术不断提升，对游戏机制有了更深入的理解。掌握了各种高级战术和道具使用技巧，成为了一名经验丰富的CS玩家。</p>
                     </div>
                 </div>
@@ -1403,7 +1282,7 @@
                     <div class="timeline-content">
                         <div class="timeline-icon"><i class="fas fa-trophy"></i></div>
                         <h3 class="timeline-title">游戏时长达到1800+小时</h3>
-                        <p class="timeline-date">2025年</p>
+                        <p class="timeline-date">2024年</p>
                         <p class="timeline-description">成为资深FPS玩家，在CS2中积累了丰富的经验和技巧。不断挑战自我，追求更高的游戏水平和排名成就。</p>
                     </div>
                 </div>
@@ -1438,7 +1317,10 @@
     </div>
     
     <!-- 音乐控制按钮 -->
-    <div class="audio-toggle" title="我的歌单">🎵</div>
+    <div class="audio-toggle" title="背景音乐">🎵</div>
+
+    <!-- 彩蛋按钮 -->
+    <div class="easter-egg" title="点击有惊喜">🎁</div>
 
     <!-- 互动小球 -->
     <div class="interactive-ball"></div>
@@ -1637,9 +1519,18 @@
             
             // 音乐控制
             const audioToggle = document.querySelector('.audio-toggle');
+            let audioPlaying = false;
             
             audioToggle.addEventListener('click', function() {
-                window.open('https://music.163.com/playlist?id=5128985690&uct2=U2FsdGVkX18lNH33n6CeSF+fiwBQUP+l45bp8E9NiOo=', '_blank');
+                if (audioPlaying) {
+                    audio.pause();
+                    this.textContent = '🎵';
+                    audioPlaying = false;
+                } else {
+                    audio.play().catch(e => console.log('Audio play failed: ', e));
+                    this.textContent = '🔇';
+                    audioPlaying = true;
+                }
             });
             
             // 互动小球
@@ -1686,9 +1577,10 @@
             });
             
             // 彩蛋功能
+            const easterEgg = document.querySelector('.easter-egg');
             let confetti;
             
-            function triggerConfetti() {
+            easterEgg.addEventListener('click', function() {
                 const confettiSettings = { 
                     target: 'confetti-container',
                     max: 150,
@@ -1709,7 +1601,7 @@
                         confetti = null;
                     }, 5000);
                 }
-            }
+            });
             
             // 生成连接线
             function generateConnections() {

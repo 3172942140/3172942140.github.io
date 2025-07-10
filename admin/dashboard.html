@@ -435,6 +435,34 @@
                 background-position: -100% 0;
             }
         }
+        
+        .btn-outline-primary {
+            background-color: transparent;
+            border-color: #007bff;
+            color: #007bff;
+        }
+        
+        .btn-outline-primary:hover {
+            background-color: #007bff;
+            border-color: #007bff;
+            color: #fff;
+        }
+        
+        /* 管理后台分页样式 */
+        .pagination-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+            margin: 20px 0;
+            flex-wrap: wrap;
+        }
+        
+        .pagination-ellipsis {
+            padding: 8px 4px;
+            color: #6c757d;
+            font-size: 14px;
+        }
 
         @media (max-width: 768px) {
             .dashboard {
@@ -883,6 +911,8 @@
                     </thead>
                     <tbody id="postsTableBody"></tbody>
                 </table>
+                <!-- 文章分页组件 -->
+                <div id="postsPaginationContainer" class="pagination-container" style="display: none;"></div>
             </section>
 
             <section id="usersSection" class="content-section" style="display: none;">
@@ -1161,19 +1191,39 @@
             return await response.json();
         }
 
+        let currentPostsPage = 1;
+        let totalPostsPages = 1;
+        let isLoadingPosts = false;
+        const postsPageSize = 10; // 管理后台每页显示的文章数量
+        
         // 加载文章列表
-        async function loadPosts() {
+        async function loadPosts(page = 1) {
+            if (isLoadingPosts) return;
+            isLoadingPosts = true;
+            
             try {
-                const response = await fetch(API_CONFIG.getUrl(API_CONFIG.ENDPOINTS.ADMIN_POSTS), {
+                const response = await fetch(`${API_CONFIG.getUrl(API_CONFIG.ENDPOINTS.ADMIN_POSTS)}?page=${page}&limit=${postsPageSize}`, {
                     headers: {
                         'Authorization': `Bearer ${localStorage.getItem('token')}`
                     }
                 });
                 
-                const posts = await handleApiResponse(response, '加载文章列表失败');
-                if (!posts) return;
+                const data = await handleApiResponse(response, '加载文章列表失败');
+                if (!data) return;
 
                 const tableBody = document.getElementById('postsTableBody');
+                
+                let posts, pagination;
+                if (data.data) {
+                    // 新的分页API响应格式
+                    posts = data.data;
+                    pagination = data.pagination;
+                    currentPostsPage = pagination.page;
+                    totalPostsPages = pagination.totalPages;
+                } else {
+                    // 兼容旧的API响应格式
+                    posts = data;
+                }
                 
                 // 获取所有文章的标签
                 const tagsResponse = await fetch(API_CONFIG.getUrl('/api/posts/all-tags'), {
@@ -1221,10 +1271,72 @@
                         </tr>
                     `;
                 }).join('');
+                
+                // 显示分页组件
+                displayPostsPagination();
+                
             } catch (error) {
                 console.error('加载文章列表失败:', error);
                 alert('加载文章列表失败，请重试');
+            } finally {
+                isLoadingPosts = false;
             }
+        }
+        
+        // 显示文章分页组件
+        function displayPostsPagination() {
+            const paginationContainer = document.getElementById('postsPaginationContainer');
+            if (!paginationContainer || totalPostsPages <= 1) {
+                if (paginationContainer) {
+                    paginationContainer.style.display = 'none';
+                }
+                return;
+            }
+            
+            paginationContainer.style.display = 'flex';
+            
+            let paginationHTML = '';
+            
+            // 上一页按钮
+            if (currentPostsPage > 1) {
+                paginationHTML += `<button class="btn btn-sm btn-outline-primary" onclick="changePostsPage(${currentPostsPage - 1})">&laquo; 上一页</button>`;
+            }
+            
+            // 页码按钮
+            const startPage = Math.max(1, currentPostsPage - 2);
+            const endPage = Math.min(totalPostsPages, currentPostsPage + 2);
+            
+            if (startPage > 1) {
+                paginationHTML += `<button class="btn btn-sm btn-outline-primary" onclick="changePostsPage(1)">1</button>`;
+                if (startPage > 2) {
+                    paginationHTML += `<span class="pagination-ellipsis">...</span>`;
+                }
+            }
+            
+            for (let i = startPage; i <= endPage; i++) {
+                const activeClass = i === currentPostsPage ? ' btn-primary' : ' btn-outline-primary';
+                paginationHTML += `<button class="btn btn-sm${activeClass}" onclick="changePostsPage(${i})">${i}</button>`;
+            }
+            
+            if (endPage < totalPostsPages) {
+                if (endPage < totalPostsPages - 1) {
+                    paginationHTML += `<span class="pagination-ellipsis">...</span>`;
+                }
+                paginationHTML += `<button class="btn btn-sm btn-outline-primary" onclick="changePostsPage(${totalPostsPages})">${totalPostsPages}</button>`;
+            }
+            
+            // 下一页按钮
+            if (currentPostsPage < totalPostsPages) {
+                paginationHTML += `<button class="btn btn-sm btn-outline-primary" onclick="changePostsPage(${currentPostsPage + 1})">下一页 &raquo;</button>`;
+            }
+            
+            paginationContainer.innerHTML = paginationHTML;
+        }
+        
+        // 切换文章页面
+        async function changePostsPage(page) {
+            if (page === currentPostsPage || isLoadingPosts) return;
+            await loadPosts(page);
         }
 
         // 加载用户列表
@@ -1318,7 +1430,7 @@
             }
 
             if (sectionId === 'posts') {
-                loadPosts();
+                loadPosts(1);
             } else if (sectionId === 'users') {
                 loadUsers();
             } else if (sectionId === 'comments') {
@@ -1345,7 +1457,7 @@
             checkAuth();
             
             // 加载初始数据
-            loadPosts();
+            loadPosts(1);
             
             // 初始化表单提交事件
             const createPostForm = document.getElementById('createPostForm');
@@ -1491,7 +1603,7 @@
 
                 // 成功后关闭模态框并刷新文章列表
                 closeCreatePostModal();
-                loadPosts();
+                loadPosts(currentPostsPage);
                 alert('文章发布成功！');
             } catch (error) {
                 console.error('发布文章失败:', error);
@@ -1636,7 +1748,7 @@
 
                 alert('文章更新成功');
                 closeEditPostModal();
-                loadPosts();
+                loadPosts(currentPostsPage);
             } catch (error) {
                 console.error('更新文章失败:', error);
                 alert(error.message || '更新文章失败，请重试');
@@ -1677,7 +1789,7 @@
                     throw new Error(error.message || '删除文章失败');
                 }
 
-                loadPosts();
+                loadPosts(currentPostsPage);
             } catch (error) {
                 console.error('删除文章失败:', error);
                 alert(error.message || '删除文章失败，请重试');
