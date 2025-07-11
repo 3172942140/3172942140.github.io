@@ -2009,14 +2009,17 @@
 
         async function loadPostsForSelect() {
             try {
-                const response = await fetch(API_CONFIG.getUrl(API_CONFIG.ENDPOINTS.ADMIN_POSTS), {
+                // 获取所有文章，不分页
+                const response = await fetch(API_CONFIG.getUrl(API_CONFIG.ENDPOINTS.ADMIN_POSTS) + '?limit=1000', {
                     headers: {
                         'Authorization': `Bearer ${localStorage.getItem('token')}`
                     }
                 });
-                const posts = await response.json();
+                const data = await response.json();
                 const select = document.getElementById('postId');
                 
+                // 处理新的API响应格式
+                const posts = data.data || data;
                 select.innerHTML = '<option value="">不关联文章</option>' + 
                     posts.map(post => `<option value="${post.id}">${post.title}</option>`).join('');
             } catch (error) {
@@ -2927,12 +2930,16 @@
         // 加载文章选项到所有文件的下拉框
         async function loadPostsForFileSelect() {
             try {
-                const response = await fetch(API_CONFIG.getUrl(API_CONFIG.ENDPOINTS.ADMIN_POSTS), {
+                // 获取所有文章，不分页
+                const response = await fetch(API_CONFIG.getUrl(API_CONFIG.ENDPOINTS.ADMIN_POSTS) + '?limit=1000', {
                     headers: {
                         'Authorization': `Bearer ${localStorage.getItem('token')}`
                     }
                 });
-                const posts = await response.json();
+                const data = await response.json();
+                
+                // 处理新的API响应格式
+                const posts = data.data || data;
                 
                 // 更新所有文件的文章选择下拉框
                 document.querySelectorAll('.file-post-select').forEach(select => {
